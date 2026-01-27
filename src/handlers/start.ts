@@ -22,6 +22,8 @@ export async function handleStart(ctx: {
     })
     .returning({ id: games.id });
 
+  if (!newGame) throw new Error("Failed to create new game");
+
   return await ctx.reply(
     `Игра началась!\nБелые: ${ctx.from.first_name}\nЧерные: ожидаем хода противника...`,
     { reply_markup: renderBoard(initialBoard, newGame.id) },

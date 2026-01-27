@@ -1,31 +1,26 @@
 import { InlineKeyboard } from "grammy";
 
 const pieceToVisualMap = {
-  "WHITE:NORMAL": "⚪",
-  "BLACK:NORMAL": "⚫",
+  WHITE: "⚪",
+  BLACK: "⚫",
   "WHITE:CROWNED": "🔴",
   "BLACK:CROWNED": "🔵",
   EMPTY: ".",
 } as const satisfies Record<Piece, string>;
 
-type Piece =
-  | "WHITE:NORMAL"
-  | "BLACK:NORMAL"
-  | "WHITE:CROWNED"
-  | "BLACK:CROWNED"
-  | "EMPTY";
+type Piece = "WHITE" | "BLACK" | "WHITE:CROWNED" | "BLACK:CROWNED" | "EMPTY";
 export type Board = Piece[][];
 
 export function createInitialBoard(): Board {
-  const board = Array<null>(8)
+  const board = Array(8)
     .fill(null)
-    .map(() => Array<Piece>(8).fill("EMPTY"));
+    .map(() => Array<Piece>(8).fill("EMPTY")) satisfies Piece[][];
 
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       if ((r + c) % 2 !== 0) {
-        if (r < 3) board[r][c] = "BLACK:NORMAL";
-        if (r > 4) board[r][c] = "WHITE:NORMAL";
+        if (r < 3) board[r]![c] = "BLACK";
+        if (r > 4) board[r]![c] = "WHITE";
       }
     }
   }

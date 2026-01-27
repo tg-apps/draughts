@@ -44,8 +44,8 @@ export async function handleQueryCallback(ctx: {
 
   if (!game.selectedPos) {
     const isOwnPiece = isWhiteTurn
-      ? piece === "WHITE:NORMAL" || piece === "WHITE:CROWNED"
-      : piece === "BLACK:NORMAL" || piece === "BLACK:CROWNED";
+      ? piece === "WHITE" || piece === "WHITE:CROWNED"
+      : piece === "BLACK" || piece === "BLACK:CROWNED";
 
     if (!isOwnPiece) return ctx.answerCallbackQuery("Выбери свою фигуру!");
 
@@ -59,8 +59,8 @@ export async function handleQueryCallback(ctx: {
   const [fromR, fromC] = game.selectedPos.split(",").map(Number);
 
   const isOwnPiece = isWhiteTurn
-    ? piece === "WHITE:NORMAL" || piece === "WHITE:CROWNED"
-    : piece === "BLACK:NORMAL" || piece === "BLACK:CROWNED";
+    ? piece === "WHITE" || piece === "WHITE:CROWNED"
+    : piece === "BLACK" || piece === "BLACK:CROWNED";
   if (isOwnPiece) {
     await db
       .update(games)
