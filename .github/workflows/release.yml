@@ -41,7 +41,7 @@ jobs:
       - name: Create release directory
         run: |
           mkdir -p release
-          cp dist/bot release/darughtsbot
+          cp dist/bot release/draughtsbot
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
@@ -53,13 +53,13 @@ jobs:
 
             ## Installation
 
-            1. Download the `darughtsbot` binary
-            2. Make it executable: `chmod +x darughtsbot`
-            3. Run: `./darughtsbot`
+            1. Download the `draughtsbot` binary
+            2. Make it executable: `chmod +x draughtsbot`
+            3. Run: `./draughtsbot`
 
             **Built with Bun** | **Linux ARM64**
           files: |
-            release/darughtsbot
+            release/draughtsbot
           draft: false
           prerelease: false
         env:
