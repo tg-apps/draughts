@@ -2,6 +2,11 @@
   "name": "draughts",
   "private": true,
   "type": "module",
+  "imports": {
+    "#db": "./src/db/index.ts",
+    "#db/schema": "./src/db/schema.ts",
+    "#game/*": "./src/game/*.ts"
+  },
   "scripts": {
     "test": "bun test",
     "format": "oxfmt --list-different || oxfmt",
