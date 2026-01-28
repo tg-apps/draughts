@@ -53,6 +53,10 @@ class Piece<T extends PieceType = PieceType> {
     return this.labelToString[this.label];
   }
 
+  toJSON(): string {
+    return this.label;
+  }
+
   isEmpty(): this is Piece<PieceTypeEmpty> {
     return this.type === "empty";
   }
@@ -92,18 +96,15 @@ export class Board {
     this.cells = cells;
   }
 
-  serialize() {
-    return JSON.stringify(this.cells, (k, v: unknown) => {
-      if (v instanceof Piece) return v.toString();
-      return v;
-    });
+  toJSON() {
+    return this.cells;
   }
 
   render(gameId: number): InlineKeyboard {
     const keyboard = new InlineKeyboard();
     this.cells.forEach((row, r) => {
       row.forEach((cell, c) => {
-        keyboard.text(cell.label, `move:${gameId}:${r}:${c}`);
+        keyboard.text(cell.toString(), `move:${gameId}:${r}:${c}`);
       });
       keyboard.row();
     });

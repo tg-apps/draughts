@@ -4,9 +4,16 @@ import { describe, expect, it } from "bun:test";
 describe("Board", () => {
   it("should create initial board", () => {
     const board = new Board();
-    console.log(board.cells);
-    console.log(board.serialize());
-    expect(true).toBeTrue();
+    expect(JSON.stringify(board)).toEqual([
+      ["EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK"],
+      ["BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY"],
+      ["EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK"],
+      ["EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY"],
+      ["EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY", "EMPTY"],
+      ["WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY"],
+      ["EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE"],
+      ["WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY"],
+    ]);
   });
 });
 
