@@ -68,10 +68,11 @@ describe("Piece", () => {
     });
   });
 
-  describe("Piece.isWhite", () => {
+  describe("Piece.isOfColor", () => {
     it("should handle an empty piece", () => {
       const piece = new Piece({ type: "empty" });
-      expect(piece.isWhite()).toBeFalse();
+      expect(piece.isOfColor("white")).toBeFalse();
+      expect(piece.isOfColor("black")).toBeFalse();
     });
 
     it("should handle a white piece", () => {
@@ -80,7 +81,8 @@ describe("Piece", () => {
         color: "white",
         variant: "default",
       });
-      expect(piece.isWhite()).toBeTrue();
+      expect(piece.isOfColor("white")).toBeTrue();
+      expect(piece.isOfColor("black")).toBeFalse();
     });
 
     it("should handle a black piece", () => {
@@ -89,52 +91,26 @@ describe("Piece", () => {
         color: "black",
         variant: "default",
       });
-      expect(piece.isWhite()).toBeFalse();
+      expect(piece.isOfColor("white")).toBeFalse();
+      expect(piece.isOfColor("black")).toBeTrue();
     });
   });
 
-  describe("Piece.isOwnPiece", () => {
-    it("should handle an empty piece", () => {
-      const piece = new Piece({ type: "empty" });
-      expect(piece.isOwnPiece("white")).toBeFalse();
-    });
-
-    it("should handle a white piece", () => {
-      const piece = new Piece({
-        type: "piece",
-        color: "white",
-        variant: "default",
-      });
-      expect(piece.isOwnPiece("white")).toBeTrue();
-      expect(piece.isOwnPiece("black")).toBeFalse();
-    });
-
-    it("should handle a black piece", () => {
-      const piece = new Piece({
-        type: "piece",
-        color: "black",
-        variant: "default",
-      });
-      expect(piece.isOwnPiece("white")).toBeFalse();
-      expect(piece.isOwnPiece("black")).toBeTrue();
-    });
-  });
-
-  describe("Piece.fromLabel", () => {
+  describe("Piece.from", () => {
     it("should create an empty piece", () => {
-      const piece = Piece.fromLabel("EMPTY");
+      const piece = Piece.from("EMPTY");
       expect(piece.type).toBe("empty");
     });
 
     it("should create a white piece", () => {
-      const piece = Piece.fromLabel("WHITE");
+      const piece = Piece.from("WHITE");
       expect(piece.type).toBe("piece");
       expect(piece.color).toBe("white");
       expect(piece.variant).toBe("default");
     });
 
     it("should create a black crowned piece", () => {
-      const piece = Piece.fromLabel("BLACK:CROWNED");
+      const piece = Piece.from("BLACK:CROWNED");
       expect(piece.type).toBe("piece");
       expect(piece.color).toBe("black");
       expect(piece.variant).toBe("crowned");

@@ -10,15 +10,15 @@ export class Board {
   constructor(labels?: PieceLabels) {
     if (labels) {
       this.cells = Array.from(labels, (labelsRow) =>
-        Array.from(labelsRow, (label) => Piece.fromLabel(label)),
+        Array.from(labelsRow, (label) => Piece.from(label)),
       );
       return;
     }
 
     this.cells = Array.from({ length: 8 }, (_, r) =>
       Array.from({ length: 8 }, (_, c) => {
-        if ((r + c) % 2 === 0) return Piece.fromLabel("EMPTY");
-        return Piece.fromLabel(r < 3 ? "BLACK" : r > 4 ? "WHITE" : "EMPTY");
+        if ((r + c) % 2 === 0) return Piece.from("EMPTY");
+        return Piece.from(r < 3 ? "BLACK" : r > 4 ? "WHITE" : "EMPTY");
       }),
     );
   }

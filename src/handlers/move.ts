@@ -22,6 +22,12 @@ function isTheirTurn(game: GameInfo, userId: number) {
   return userId === currentPlayerId;
 }
 
+function parsePos(pos: string): { row: number; col: number } {
+  const [row, col] = pos.split(",").map(Number);
+  if (!row || !col) throw new Error("Invalid data format");
+  return { row, col };
+}
+
 export async function handleMoveCallback(
   ctx: {
     from: User;
@@ -51,7 +57,7 @@ export async function handleMoveCallback(
   const board = Board.fromJSON(game.board);
   const piece = board.getPiece(row, col);
 
-  const isOwnPiece = piece.isOwnPiece(game.turn);
+  const isOwnPiece = piece.isOfColor(game.turn);
 
   if (!game.selectedPos) {
     if (!isOwnPiece) return ctx.answerCallbackQuery("Выбери свою фигуру!");
@@ -63,8 +69,6 @@ export async function handleMoveCallback(
     return ctx.answerCallbackQuery("Фигура выбрана. Куда идем?");
   }
 
-  const [fromRow, fromCol] = game.selectedPos.split(",").map(Number);
-
   if (isOwnPiece) {
     await db
       .update(games)
@@ -75,12 +79,15 @@ export async function handleMoveCallback(
 
   if (!piece.isEmpty()) return ctx.answerCallbackQuery("Клетка занята!");
 
+  const { row: fromRow, col: fromCol } = parsePos(game.selectedPos);
+
   const isWhiteTurn = game.turn === "white";
 
-  const distR = row - fromRow;
-  const distC = Math.abs(col - fromCol);
-  const isCapture = Math.abs(distR) === 2 && distC === 2;
-  const isStep = (isWhiteTurn ? distR === -1 : distR === 1) && distC === 1;
+  const distRow = row - fromRow;
+  const distCol = Math.abs(col - fromCol);
+  const isCapture = Math.abs(distRow) === 2 && distCol === 2;
+  const isStep =
+    (isWhiteTurn ? distRow === -1 : distRow === 1) && distCol === 1;
 
   if (!isStep && !isCapture)
     return ctx.answerCallbackQuery("Так ходить нельзя!");
@@ -90,16 +97,16 @@ export async function handleMoveCallback(
     const midC = (col + fromCol) / 2;
     const victim = board.getPiece(midR, midC);
     if (victim.isEmpty()) return ctx.answerCallbackQuery("Там некого прыгать");
-    board.cells[midR][midC] = Piece.fromLabel("EMPTY");
+    board.cells[midR][midC] = Piece.from("EMPTY");
   }
 
   board.cells[row][col] = board.getPiece(fromRow, fromCol);
   board.cells[fromRow][fromCol] = "EMPTY";
 
   if (isWhiteTurn && row === 0)
-    board.cells[row][col] = Piece.fromLabel("WHITE:CROWNED");
+    board.cells[row][col] = Piece.from("WHITE:CROWNED");
   if (!isWhiteTurn && row === 7)
-    board.cells[row][col] = Piece.fromLabel("BLACK:CROWNED");
+    board.cells[row][col] = Piece.from("BLACK:CROWNED");
 
   const nextTurn = isWhiteTurn ? "black" : "white";
 

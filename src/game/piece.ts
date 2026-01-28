@@ -5,19 +5,30 @@ export type PieceLabel =
   | "BLACK:CROWNED"
   | "EMPTY";
 
-type PieceTypeEmpty = {
+type EmptyPiece = {
   readonly type: "empty";
-  color?: never;
-  variant?: never;
+  readonly color?: never;
+  readonly variant?: never;
 };
 
-type PieceTypePiece = {
+type PieceColor = "white" | "black";
+type PieceVariant = "default" | "crowned";
+
+type PieceOfColor<Color extends PieceColor = PieceColor> = {
   readonly type: "piece";
-  readonly color: "white" | "black";
-  readonly variant: "default" | "crowned";
+  readonly color: Color;
+  readonly variant: PieceVariant;
 };
 
-type PieceType = PieceTypeEmpty | PieceTypePiece;
+type PieceOfVariant<Variant extends PieceVariant = PieceVariant> = {
+  readonly type: "piece";
+  readonly color: PieceColor;
+  readonly variant: Variant;
+};
+
+type PieceTypePiece = PieceOfColor & PieceOfVariant;
+
+type PieceType = EmptyPiece | PieceTypePiece;
 
 export class Piece<T extends PieceType = PieceType> {
   private readonly labelToString = {
@@ -55,19 +66,17 @@ export class Piece<T extends PieceType = PieceType> {
     return this.label;
   }
 
-  isEmpty(): this is Piece<PieceTypeEmpty> {
+  isEmpty(): this is Piece<EmptyPiece> {
     return this.type === "empty";
   }
 
-  isWhite(): this is Piece<PieceTypePiece & { color: "white" }> {
-    return this.color === "white";
-  }
-
-  isOwnPiece(color: "white" | "black"): boolean {
+  isOfColor<Color extends PieceColor>(
+    color: Color,
+  ): this is PieceOfColor<Color> {
     return this.color === color;
   }
 
-  static fromLabel(label: PieceLabel): Piece {
+  static from(label: PieceLabel): Piece {
     if (label === "EMPTY") return new Piece({ type: "empty" });
     if (label === "WHITE") {
       return new Piece({ type: "piece", color: "white", variant: "default" });
