@@ -21,5 +21,6 @@ describe("Board", () => {
   it("should create initial board", () => {
     const board = new Board();
     console.log(board.board);
+    console.log(board.serialize());
   });
 });
