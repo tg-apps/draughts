@@ -1,12 +1,11 @@
 import { InlineKeyboard } from "grammy";
 
-const pieceToVisualMap = {
-  WHITE: "⚪",
-  BLACK: "⚫",
-  "WHITE:CROWNED": "🔴",
-  "BLACK:CROWNED": "🔵",
-  EMPTY: ".",
-} as const satisfies Record<PieceTypeName, string>;
+type PieceLabel =
+  | "WHITE"
+  | "BLACK"
+  | "WHITE:CROWNED"
+  | "BLACK:CROWNED"
+  | "EMPTY";
 
 type PieceTypeEmpty = {
   readonly type: "empty";
@@ -23,6 +22,14 @@ type PieceType =
     };
 
 class Piece<T extends PieceType = PieceType> {
+  private readonly labelToString = {
+    WHITE: "⚪",
+    BLACK: "⚫",
+    "WHITE:CROWNED": "🔴",
+    "BLACK:CROWNED": "🔵",
+    EMPTY: ".",
+  } satisfies Record<PieceLabel, string>;
+
   readonly type: T["type"];
   readonly color: T["color"];
   readonly variant: T["variant"];
@@ -32,21 +39,25 @@ class Piece<T extends PieceType = PieceType> {
     this.variant = piece.variant;
   }
 
-  toString(): string {
-    if (this.isEmpty()) return ".";
+  get label(): PieceLabel {
+    if (this.isEmpty()) return "EMPTY";
     if (this.color === "white") {
-      if (this.variant === "default") return "⚪";
-      return "🔴";
+      if (this.variant === "default") return "WHITE";
+      return "WHITE:CROWNED";
     }
-    if (this.variant === "default") return "⚫";
-    return "🔵";
+    if (this.variant === "default") return "BLACK";
+    return "BLACK:CROWNED";
+  }
+
+  toString(): string {
+    return this.labelToString[this.label];
   }
 
   isEmpty(): this is Piece<PieceTypeEmpty> {
     return this.type === "empty";
   }
 
-  static fromLabel(label: PieceTypeName): Piece {
+  static fromLabel(label: PieceLabel): Piece {
     if (label === "EMPTY") return new Piece({ type: "empty" });
     if (label === "WHITE") {
       return new Piece({ type: "piece", color: "white", variant: "default" });
@@ -62,9 +73,9 @@ class Piece<T extends PieceType = PieceType> {
 }
 
 export class Board {
-  readonly board: readonly (readonly Piece[])[];
+  readonly cells: readonly (readonly Piece[])[];
   constructor() {
-    const board = Array.from<undefined, readonly Piece[]>({ length: 8 }, () =>
+    const cells = Array.from<undefined, Piece[]>({ length: 8 }, () =>
       Array.from<undefined, Piece>({ length: 8 }, () =>
         Piece.fromLabel("EMPTY"),
       ),
@@ -73,56 +84,29 @@ export class Board {
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
         if ((r + c) % 2 !== 0) {
-          if (r < 3) board[r]![c] = Piece.fromLabel("BLACK");
-          if (r > 4) board[r]![c] = Piece.fromLabel("WHITE");
+          if (r < 3) cells[r]![c] = Piece.fromLabel("BLACK");
+          if (r > 4) cells[r]![c] = Piece.fromLabel("WHITE");
         }
       }
     }
-    this.board = board;
+    this.cells = cells;
   }
 
   serialize() {
-    return JSON.stringify(this.board);
-  }
-}
-
-type PieceTypeName =
-  | "WHITE"
-  | "BLACK"
-  | "WHITE:CROWNED"
-  | "BLACK:CROWNED"
-  | "EMPTY";
-export type Board_legacy = PieceTypeName[][];
-
-export function createInitialBoard(): Board_legacy {
-  const board = Array(8)
-    .fill(null)
-    .map(() =>
-      Array<PieceTypeName>(8).fill("EMPTY"),
-    ) satisfies PieceTypeName[][];
-
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if ((r + c) % 2 !== 0) {
-        if (r < 3) board[r]![c] = "BLACK";
-        if (r > 4) board[r]![c] = "WHITE";
-      }
-    }
-  }
-  return board;
-}
-
-export function renderBoard(
-  board: Board_legacy,
-  gameId: number,
-): InlineKeyboard {
-  const keyboard = new InlineKeyboard();
-  board.forEach((row, r) => {
-    row.forEach((cell, c) => {
-      const label = pieceToVisualMap[cell];
-      keyboard.text(label, `move:${gameId}:${r}:${c}`);
+    return JSON.stringify(this.cells, (k, v: unknown) => {
+      if (v instanceof Piece) return v.toString();
+      return v;
     });
-    keyboard.row();
-  });
-  return keyboard;
+  }
+
+  render(gameId: number): InlineKeyboard {
+    const keyboard = new InlineKeyboard();
+    this.cells.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        keyboard.text(cell.label, `move:${gameId}:${r}:${c}`);
+      });
+      keyboard.row();
+    });
+    return keyboard;
+  }
 }
