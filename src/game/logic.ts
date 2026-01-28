@@ -80,6 +80,10 @@ export class Board {
     }
     this.board = board;
   }
+
+  serialize() {
+    return JSON.stringify(this.board);
+  }
 }
 
 type PieceTypeName =
