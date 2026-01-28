@@ -81,13 +81,16 @@ type Cells = readonly (readonly Piece[])[];
 export class Board {
   private readonly cells: Cells;
   constructor(readonly existingCells?: Cells) {
-    const cells =
-      existingCells ??
-      Array.from<undefined, Piece[]>({ length: 8 }, () =>
-        Array.from<undefined, Piece>({ length: 8 }, () =>
-          Piece.fromLabel("EMPTY"),
-        ),
-      );
+    if (existingCells) {
+      this.cells = existingCells;
+      return;
+    }
+
+    const cells = Array.from<undefined, Piece[]>({ length: 8 }, () =>
+      Array.from<undefined, Piece>({ length: 8 }, () =>
+        Piece.fromLabel("EMPTY"),
+      ),
+    );
 
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
