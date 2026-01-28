@@ -76,14 +76,18 @@ class Piece<T extends PieceType = PieceType> {
   }
 }
 
+type Cells = readonly (readonly Piece[])[];
+
 export class Board {
-  readonly cells: readonly (readonly Piece[])[];
-  constructor() {
-    const cells = Array.from<undefined, Piece[]>({ length: 8 }, () =>
-      Array.from<undefined, Piece>({ length: 8 }, () =>
-        Piece.fromLabel("EMPTY"),
-      ),
-    );
+  private readonly cells: Cells;
+  constructor(readonly cells?: Cells) {
+    const cells =
+      cells ??
+      Array.from<undefined, Piece[]>({ length: 8 }, () =>
+        Array.from<undefined, Piece>({ length: 8 }, () =>
+          Piece.fromLabel("EMPTY"),
+        ),
+      );
 
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
@@ -96,8 +100,12 @@ export class Board {
     this.cells = cells;
   }
 
-  toJSON() {
+  toJSON(): Cells {
     return this.cells;
+  }
+
+  static fromJSON(board: string): Board {
+    return new Board(JSON.parse(board));
   }
 
   render(gameId: number): InlineKeyboard {

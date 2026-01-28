@@ -3,7 +3,7 @@ import type { User } from "grammy/types";
 
 import { db } from "#db";
 import { games } from "#db/schema";
-import { renderBoard, type Board_legacy } from "#game/logic";
+import { Board } from "#game/logic";
 import { eq } from "drizzle-orm";
 
 export async function handleQueryCallback(ctx: {
@@ -39,7 +39,7 @@ export async function handleQueryCallback(ctx: {
     return ctx.answerCallbackQuery("Сейчас не твой ход!");
   }
 
-  const board: Board_legacy = JSON.parse(game.board);
+  const board = Board.fromJSON(game.board);
   const piece = board[row][col];
 
   if (!game.selectedPos) {
@@ -107,7 +107,7 @@ export async function handleQueryCallback(ctx: {
 
   await ctx.editMessageText(
     `Ход: ${nextTurn === "white" ? "Белые ⚪" : "Черные ⚫"}`,
-    { reply_markup: renderBoard(board, gameId) },
+    { reply_markup: board.render(gameId) },
   );
 
   await ctx.answerCallbackQuery();

@@ -15,7 +15,7 @@ export async function handleStart(ctx: {
     .insert(games)
     .values({
       chatId: ctx.chat.id,
-      board: initialBoard.serialize(),
+      board: JSON.stringify(initialBoard),
       whitePlayer: ctx.from.id,
       turn: "white",
       status: "playing",
