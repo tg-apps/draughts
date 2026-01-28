@@ -1,4 +1,4 @@
-import { createInitialBoard } from "#game/logic";
+import { createInitialBoard, Board } from "#game/logic";
 import { describe, expect, it } from "bun:test";
 
 describe("createInitialBoard", () => {
@@ -14,5 +14,12 @@ describe("createInitialBoard", () => {
       ["EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE"],
       ["WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY"],
     ]);
+  });
+});
+
+describe("Board", () => {
+  it("should create initial board", () => {
+    const board = new Board();
+    console.log(board.board);
   });
 });
