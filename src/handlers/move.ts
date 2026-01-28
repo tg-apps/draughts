@@ -3,7 +3,7 @@ import type { User } from "grammy/types";
 
 import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";
-import { Board } from "#game/logic";
+import { Board } from "#game/board";
 import { Piece } from "#game/piece";
 import { eq } from "drizzle-orm";
 

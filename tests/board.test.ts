@@ -1,4 +1,4 @@
-import { Board, type PieceLabels } from "#game/logic";
+import { Board, type PieceLabels } from "#game/board";
 import { describe, expect, it } from "bun:test";
 
 describe("Board", () => {
