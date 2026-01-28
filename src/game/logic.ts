@@ -80,9 +80,9 @@ type Cells = readonly (readonly Piece[])[];
 
 export class Board {
   private readonly cells: Cells;
-  constructor(readonly cells?: Cells) {
+  constructor(readonly existingCells?: Cells) {
     const cells =
-      cells ??
+      existingCells ??
       Array.from<undefined, Piece[]>({ length: 8 }, () =>
         Array.from<undefined, Piece>({ length: 8 }, () =>
           Piece.fromLabel("EMPTY"),
