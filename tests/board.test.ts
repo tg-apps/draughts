@@ -4,7 +4,7 @@ import { describe, expect, it } from "bun:test";
 describe("Board", () => {
   it("should create initial board", () => {
     const board = new Board();
-    expect(JSON.stringify(board)).toEqual([
+    expect(JSON.stringify(board)).toEqual(JSON.stringify([
       ["EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK"],
       ["BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY"],
       ["EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK", "EMPTY", "BLACK"],
@@ -13,7 +13,7 @@ describe("Board", () => {
       ["WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY"],
       ["EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE"],
       ["WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY", "WHITE", "EMPTY"],
-    ]);
+    ]));
   });
 });
 
