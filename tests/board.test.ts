@@ -146,11 +146,185 @@ describe("Board", () => {
   });
 
   describe("Board.getMoveInfo", () => {
-    it("should return correct piece", () => {
+    it("returns step for regular white piece forward move", () => {
       const board = new Board();
       expect(
         board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 4, toCol: 1 }),
       ).toEqual({ type: "step" });
+    });
+
+    it("returns step for regular black piece forward move", () => {
+      const board = new Board();
+      expect(
+        board.getMoveInfo({ fromRow: 2, fromCol: 1, toRow: 3, toCol: 2 }),
+      ).toEqual({ type: "step" });
+    });
+
+    it("returns invalid for regular piece backward step", () => {
+      const board = new Board();
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 6, toCol: 1 }).type,
+      ).toEqual("invalid");
+    });
+
+    it("returns invalid for regular piece long step without capture", () => {
+      const board = new Board();
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 3, toCol: 2 }),
+      ).toEqual({ type: "invalid", reason: "invalid_distance" });
+    });
+
+    it("returns invalid when moving from an empty cell", () => {
+      const board = new Board();
+      expect(
+        board.getMoveInfo({ fromRow: 3, fromCol: 0, toRow: 4, toCol: 1 }),
+      ).toEqual({ type: "invalid", reason: "from_empty" });
+    });
+
+    it("returns invalid when target cell is occupied", () => {
+      const board = new Board();
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 7, toCol: 2 }),
+      ).toEqual({ type: "invalid", reason: "to_occupied" });
+    });
+
+    it("returns invalid for non-diagonal moves or same square", () => {
+      const board = new Board();
+      // same square
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 5, toCol: 0 }).type,
+      ).toEqual("invalid");
+      // horizontal
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 5, toCol: 2 }).type,
+      ).toEqual("invalid");
+      // unequal distances
+      expect(
+        board.getMoveInfo({ fromRow: 5, fromCol: 0, toRow: 6, toCol: 2 }),
+      ).toEqual({ type: "invalid", reason: "invalid_distance" });
+    });
+
+    describe("regular piece captures", () => {
+      it("allows forward capture", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[4][1] = "WHITE";
+        labels[3][2] = "BLACK";
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 4, fromCol: 1, toRow: 2, toCol: 3 }),
+        ).toEqual({
+          type: "capture",
+          victim: { row: 3, col: 2 },
+        });
+      });
+
+      it("allows backward capture", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[3][3] = "WHITE";
+        labels[4][4] = "BLACK";
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 3, fromCol: 3, toRow: 5, toCol: 5 }),
+        ).toEqual({
+          type: "capture",
+          victim: { row: 4, col: 4 },
+        });
+      });
+
+      it("disallows capture over own piece", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[4][1] = "WHITE";
+        labels[3][2] = "WHITE"; // own color
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 4, fromCol: 1, toRow: 2, toCol: 3 }),
+        ).toEqual({ type: "invalid", reason: "invalid_victim" });
+      });
+
+      it("disallows long capture for regular piece", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[6][1] = "WHITE";
+        labels[4][3] = "BLACK";
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 6, fromCol: 1, toRow: 2, toCol: 5 }),
+        ).toEqual({ type: "invalid", reason: "invalid_distance" });
+      });
+    });
+
+    describe("king moves and captures", () => {
+      it("allows king to step any distance diagonally if path is clear", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[7][1] = "WHITE:CROWNED";
+        const board = new Board(labels);
+
+        // short step
+        expect(
+          board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 6, toCol: 2 }),
+        ).toEqual({ type: "step" });
+
+        // long step
+        expect(
+          board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
+        ).toEqual({ type: "step" });
+      });
+
+      it("allows king long capture with single victim", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[7][1] = "WHITE:CROWNED";
+        labels[5][3] = "BLACK";
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
+        ).toEqual({
+          type: "capture",
+          victim: { row: 5, col: 3 },
+        });
+      });
+
+      it("disallows king step when path is blocked by own piece", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[7][1] = "WHITE:CROWNED";
+        labels[5][3] = "WHITE"; // own piece in path
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
+        ).toEqual({ type: "invalid", reason: "invalid_victim" });
+      });
+
+      it("disallows capture when multiple victims are in the path", () => {
+        const labels: PieceLabels = Array.from({ length: 8 }, () =>
+          Array(8).fill("EMPTY"),
+        );
+        labels[7][1] = "WHITE:CROWNED";
+        labels[5][3] = "BLACK";
+        labels[4][4] = "BLACK"; // second victim
+        const board = new Board(labels);
+
+        expect(
+          board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
+        ).toEqual({ type: "invalid", reason: "invalid_distance" });
+      });
     });
   });
 });
