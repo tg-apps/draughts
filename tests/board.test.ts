@@ -323,7 +323,7 @@ describe("Board", () => {
 
         expect(
           board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
-        ).toEqual({ type: "invalid", reason: "invalid_distance" });
+        ).toEqual({ type: "invalid", reason: "invalid_victim" });
       });
     });
   });
@@ -331,8 +331,8 @@ describe("Board", () => {
   describe("Board.hasAnyCapture", () => {
     it("returns false on the initial board for both colors", () => {
       const board = new Board();
-      expect(board.hasAnyCapture("black")).toBe(false);
-      expect(board.hasAnyCapture("white")).toBe(false);
+      expect(board.hasAnyCapture("black")).toBeFalse();
+      expect(board.hasAnyCapture("white")).toBeFalse();
     });
 
     it("returns false when there are pieces of the color but no possible captures", () => {
@@ -346,44 +346,47 @@ describe("Board", () => {
       labels[2][5] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(false);
-      expect(board.hasAnyCapture("black")).toBe(false);
+      expect(board.hasAnyCapture("white")).toBeFalse();
+      expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular white man can capture (forward)", () => {
       const labels: PieceLabels = Array.from({ length: 8 }, () =>
         Array(8).fill("EMPTY"),
       );
-      labels[4][1] = "WHITE";
-      labels[3][2] = "BLACK";
+      // Near edge to prevent mutual capture
+      labels[4][7] = "WHITE";
+      labels[3][6] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(true);
-      expect(board.hasAnyCapture("black")).toBe(false);
+      expect(board.hasAnyCapture("white")).toBeTrue();
+      expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular white man can capture (backward)", () => {
       const labels: PieceLabels = Array.from({ length: 8 }, () =>
         Array(8).fill("EMPTY"),
       );
-      labels[3][3] = "WHITE";
-      labels[4][4] = "BLACK";
+      // Near edge to prevent mutual capture
+      labels[3][7] = "WHITE";
+      labels[4][6] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(true);
-      expect(board.hasAnyCapture("black")).toBe(false);
+      expect(board.hasAnyCapture("white")).toBeTrue();
+      expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular black man can capture", () => {
       const labels: PieceLabels = Array.from({ length: 8 }, () =>
         Array(8).fill("EMPTY"),
       );
-      labels[3][3] = "BLACK";
-      labels[4][4] = "WHITE";
+      // Near edge to prevent mutual capture
+      labels[3][0] = "BLACK";
+      labels[4][1] = "WHITE";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("black")).toBe(true);
-      expect(board.hasAnyCapture("white")).toBe(false);
+      expect(board.hasAnyCapture("black")).toBeTrue();
+      expect(board.hasAnyCapture("white")).toBeFalse();
     });
 
     it("returns true when a king can make a long capture", () => {
@@ -394,8 +397,8 @@ describe("Board", () => {
       labels[5][3] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(true);
-      expect(board.hasAnyCapture("black")).toBe(false);
+      expect(board.hasAnyCapture("white")).toBeTrue();
+      expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns false for a king when potential captures are invalid (blocked path, own piece, multiple victims)", () => {
@@ -405,13 +408,13 @@ describe("Board", () => {
       // Own piece blocking
       labels[7][1] = "WHITE:CROWNED";
       labels[5][3] = "WHITE";
-      // Multiple victims scenario (would be invalid anyway)
+      // Multiple victims scenario
       labels[6][3] = "WHITE:CROWNED";
       labels[4][5] = "BLACK";
       labels[3][6] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(false);
+      expect(board.hasAnyCapture("white")).toBeFalse();
     });
 
     it("returns true when at least one piece of the color has a capture (among many pieces)", () => {
@@ -419,13 +422,13 @@ describe("Board", () => {
         Array(8).fill("EMPTY"),
       );
       // Several white pieces, only one can capture
-      labels[4][1] = "WHITE";
+      labels[4][3] = "WHITE";
       labels[4][5] = "WHITE";
-      labels[3][2] = "BLACK"; // capturable by the piece at [4][1]
-      labels[2][3] = "WHITE"; // own piece, no extra capture
+      labels[3][4] = "BLACK";
+      labels[2][5] = "WHITE";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(true);
+      expect(board.hasAnyCapture("white")).toBeTrue();
     });
 
     it("handles crowned pieces correctly (king with short capture)", () => {
@@ -436,7 +439,7 @@ describe("Board", () => {
       labels[3][2] = "BLACK";
       const board = new Board(labels);
 
-      expect(board.hasAnyCapture("white")).toBe(true);
+      expect(board.hasAnyCapture("white")).toBeTrue();
     });
   });
 });

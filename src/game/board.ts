@@ -166,8 +166,9 @@ export class Board {
     return false;
   }
 
-  // Private helper: checks if the piece at (fromRow, fromCol) has at least one capture
-  // Returns early on first valid capture found (no list allocation)
+  /**
+   * @private helper: checks if the piece at (fromRow, fromCol) has at least one capture
+   */
   #pieceHasCapture(fromRow: number, fromCol: number): boolean {
     const piece = this.getPiece(fromRow, fromCol);
 
@@ -219,8 +220,7 @@ export class Board {
         if (
           isKing &&
           moveInfo.type === "invalid" &&
-          (moveInfo.reason === "to_occupied" ||
-            moveInfo.reason === "invalid_victim")
+          moveInfo.reason === "invalid_victim"
         ) {
           break;
         }
