@@ -1,5 +1,5 @@
 import { run } from "@grammyjs/runner";
-import { Bot } from "grammy";
+import { Bot, GrammyError } from "grammy";
 
 import { handleMoveCallback } from "./handlers/move";
 import { handleStart } from "./handlers/start";
@@ -25,8 +25,6 @@ bot.catch((err) => {
   const e = err.error;
   if (e instanceof GrammyError) {
     console.error("Error in request:", e.description);
-  } else if (e instanceof HttpError) {
-    console.error("Could not contact Telegram:", e);
   } else {
     console.error("Unknown error:", e);
   }
