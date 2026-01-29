@@ -31,13 +31,13 @@ type PieceTypePiece = PieceOfColor & PieceOfVariant;
 type PieceType = EmptyPiece | PieceTypePiece;
 
 export class Piece<T extends PieceType = PieceType> {
-  private readonly labelToString = {
+  readonly #labelToString: Record<PieceLabel, string> = {
     WHITE: "⚪",
     BLACK: "⚫",
     "WHITE:CROWNED": "🔴",
     "BLACK:CROWNED": "🔵",
     EMPTY: ".",
-  } satisfies Record<PieceLabel, string>;
+  };
 
   readonly type: T["type"];
   readonly color: T["color"];
@@ -59,7 +59,7 @@ export class Piece<T extends PieceType = PieceType> {
   }
 
   toString(): string {
-    return this.labelToString[this.label];
+    return this.#labelToString[this.label];
   }
 
   toJSON(): string {

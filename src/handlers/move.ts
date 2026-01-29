@@ -97,16 +97,16 @@ export async function handleMoveCallback(
     const midC = (col + fromCol) / 2;
     const victim = board.getPiece(midR, midC);
     if (victim.isEmpty()) return ctx.answerCallbackQuery("Там некого прыгать");
-    board.cells[midR][midC] = Piece.from("EMPTY");
+    board.setPiece(midR, midC, Piece.from("EMPTY"));
   }
 
-  board.cells[row][col] = board.getPiece(fromRow, fromCol);
-  board.cells[fromRow][fromCol] = "EMPTY";
+  board.setPiece(row, col, board.getPiece(fromRow, fromCol));
+  board.setPiece(fromRow, fromCol, Piece.from("EMPTY"));
 
   if (isWhiteTurn && row === 0)
-    board.cells[row][col] = Piece.from("WHITE:CROWNED");
+    board.setPiece(row, col, Piece.from("WHITE:CROWNED"));
   if (!isWhiteTurn && row === 7)
-    board.cells[row][col] = Piece.from("BLACK:CROWNED");
+    board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
 
   const nextTurn = isWhiteTurn ? "black" : "white";
 
