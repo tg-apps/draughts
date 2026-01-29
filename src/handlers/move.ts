@@ -81,27 +81,29 @@ export async function handleMoveCallback(
 
   const { row: fromRow, col: fromCol } = parsePos(game.selectedPos);
 
-  const isWhiteTurn = game.turn === "white";
+  const moveInfo = board.getMoveInfo({
+    fromRow,
+    fromCol,
+    toRow: row,
+    toCol: col,
+  });
 
-  const distRow = row - fromRow;
-  const distCol = Math.abs(col - fromCol);
-  const isCapture = Math.abs(distRow) === 2 && distCol === 2;
-  const isStep =
-    (isWhiteTurn ? distRow === -1 : distRow === 1) && distCol === 1;
-
-  if (!isStep && !isCapture)
+  if (moveInfo.type === "invalid") {
     return ctx.answerCallbackQuery("Так ходить нельзя!");
+  }
 
-  if (isCapture) {
-    const midR = (row + fromRow) / 2;
-    const midC = (col + fromCol) / 2;
-    const victim = board.getPiece(midR, midC);
-    if (victim.isEmpty()) return ctx.answerCallbackQuery("Там некого прыгать");
-    board.setPiece(midR, midC, Piece.from("EMPTY"));
+  if (moveInfo.type === "capture") {
+    board.setPiece(
+      moveInfo.victim.row,
+      moveInfo.victim.col,
+      Piece.from("EMPTY"),
+    );
   }
 
   board.setPiece(row, col, board.getPiece(fromRow, fromCol));
   board.setPiece(fromRow, fromCol, Piece.from("EMPTY"));
+
+  const isWhiteTurn = game.turn === "white";
 
   if (isWhiteTurn && row === 0)
     board.setPiece(row, col, Piece.from("WHITE:CROWNED"));

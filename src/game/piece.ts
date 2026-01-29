@@ -11,7 +11,7 @@ type EmptyPiece = {
   readonly variant?: never;
 };
 
-type PieceColor = "white" | "black";
+export type PieceColor = "white" | "black";
 type PieceVariant = "default" | "crowned";
 
 type PieceOfColor<Color extends PieceColor = PieceColor> = {
@@ -26,9 +26,7 @@ type PieceOfVariant<Variant extends PieceVariant = PieceVariant> = {
   readonly variant: Variant;
 };
 
-type PieceTypePiece = PieceOfColor & PieceOfVariant;
-
-type PieceType = EmptyPiece | PieceTypePiece;
+type PieceType = EmptyPiece | (PieceOfColor & PieceOfVariant);
 
 export class Piece<T extends PieceType = PieceType> {
   readonly #labelToString: Record<PieceLabel, string> = {
