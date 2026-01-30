@@ -323,7 +323,7 @@ describe("Board", () => {
 
         expect(
           board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
-        ).toEqual({ type: "invalid", reason: "invalid_victim" });
+        ).toEqual({ type: "invalid", reason: "multiple_victims" });
       });
     });
   });
