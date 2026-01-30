@@ -14,6 +14,7 @@ sqlite.run(`
     board TEXT NOT NULL,
     turn TEXT DEFAULT 'white' NOT NULL,
     selected_pos TEXT,
+    is_jump_chain INTEGER DEFAULT 0 NOT NULL,
     status TEXT DEFAULT 'playing' NOT NULL
   )
 `);

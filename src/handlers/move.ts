@@ -2,23 +2,42 @@ import type { Context } from "grammy";
 import type { User } from "grammy/types";
 
 import { db } from "#db";
-import { games } from "#db/schema";
-import { Board } from "#game/logic";
+import { games, type GameInfo } from "#db/schema";
+import { Board } from "#game/board";
+import { Piece } from "#game/piece";
 import { eq } from "drizzle-orm";
 
-export async function handleQueryCallback(ctx: {
-  callbackQuery: { data: string };
-  from: User;
-  answerCallbackQuery: Context["answerCallbackQuery"];
-  editMessageText: Context["editMessageText"];
-}): Promise<true | undefined> {
-  const data = ctx.callbackQuery.data;
-  if (!data.startsWith("move:")) return;
-
+function parseData(data: string): { gameId: number; row: number; col: number } {
   const [, gameIdStr, r, c] = data.split(":");
+  if (!gameIdStr || !r || !c) throw new Error("Invalid data format");
   const gameId = parseInt(gameIdStr);
   const row = parseInt(r);
   const col = parseInt(c);
+  return { gameId, row, col };
+}
+
+function isTheirTurn(game: GameInfo, userId: number) {
+  const isWhiteTurn = game.turn === "white";
+  const currentPlayerId = isWhiteTurn ? game.whitePlayer : game.blackPlayer;
+  return userId === currentPlayerId;
+}
+
+function parsePos(pos: string): { row: number; col: number } {
+  const [row, col] = pos.split(",").map(Number);
+  if (row === undefined || col === undefined)
+    throw new Error(`Invalid data format: ${pos}`);
+  return { row, col };
+}
+
+export async function handleMoveCallback(
+  ctx: {
+    from: User;
+    answerCallbackQuery: Context["answerCallbackQuery"];
+    editMessageText: Context["editMessageText"];
+  },
+  data: string,
+): Promise<true | undefined> {
+  const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
 
   const game = await db.query.games.findFirst({ where: eq(games.id, gameId) });
@@ -32,76 +51,89 @@ export async function handleQueryCallback(ctx: {
     game.blackPlayer = userId;
   }
 
-  const isWhiteTurn = game.turn === "white";
-  const currentPlayerId = isWhiteTurn ? game.whitePlayer : game.blackPlayer;
-
-  if (userId !== currentPlayerId) {
+  if (!isTheirTurn(game, userId)) {
     return ctx.answerCallbackQuery("Сейчас не твой ход!");
   }
 
   const board = Board.fromJSON(game.board);
-  const piece = board[row][col];
+  const piece = board.getPiece(row, col);
 
-  if (!game.selectedPos) {
-    const isOwnPiece = isWhiteTurn
-      ? piece === "WHITE" || piece === "WHITE:CROWNED"
-      : piece === "BLACK" || piece === "BLACK:CROWNED";
+  const isOwnPiece = piece.isOfColor(game.turn);
 
-    if (!isOwnPiece) return ctx.answerCallbackQuery("Выбери свою фигуру!");
-
-    await db
-      .update(games)
-      .set({ selectedPos: `${row},${col}` })
-      .where(eq(games.id, gameId));
-    return ctx.answerCallbackQuery("Фигура выбрана. Куда идем?");
-  }
-
-  const [fromR, fromC] = game.selectedPos.split(",").map(Number);
-
-  const isOwnPiece = isWhiteTurn
-    ? piece === "WHITE" || piece === "WHITE:CROWNED"
-    : piece === "BLACK" || piece === "BLACK:CROWNED";
   if (isOwnPiece) {
+    // If the player is in a jump chain, they cannot switch to another piece
+    if (game.isJumpChain && game.selectedPos !== `${row},${col}`) {
+      return ctx.answerCallbackQuery("Ты обязан бить текущей фигурой!");
+    }
+
+    // Don't allow selecting a piece that can't jump if a capture is available
+    if (!board.pieceHasCapture(row, col) && board.hasAnyCapture(game.turn)) {
+      return ctx.answerCallbackQuery("Бить обязательно! Выбери другую фигуру.");
+    }
+
     await db
       .update(games)
       .set({ selectedPos: `${row},${col}` })
       .where(eq(games.id, gameId));
-    return ctx.answerCallbackQuery("Фигура перевыбрана");
+    return ctx.answerCallbackQuery("Фигура выбрана");
   }
 
-  if (piece !== "EMPTY") return ctx.answerCallbackQuery("Клетка занята!");
+  if (!game.selectedPos) return ctx.answerCallbackQuery("Выбери свою фигуру!");
 
-  const distR = row - fromR;
-  const distC = Math.abs(col - fromC);
-  const isCapture = Math.abs(distR) === 2 && distC === 2;
-  const isStep = (isWhiteTurn ? distR === -1 : distR === 1) && distC === 1;
+  if (!piece.isEmpty()) return ctx.answerCallbackQuery("Клетка занята!");
 
-  if (!isStep && !isCapture)
+  const { row: fromRow, col: fromCol } = parsePos(game.selectedPos);
+
+  const moveInfo = board.getMoveInfo({
+    fromRow,
+    fromCol,
+    toRow: row,
+    toCol: col,
+  });
+
+  if (moveInfo.type === "invalid") {
     return ctx.answerCallbackQuery("Так ходить нельзя!");
-
-  if (isCapture) {
-    const midR = (row + fromR) / 2;
-    const midC = (col + fromC) / 2;
-    const victim = board[midR][midC];
-    if (victim === "EMPTY")
-      return ctx.answerCallbackQuery("Там некого прыгать");
-    board[midR][midC] = "EMPTY";
   }
 
-  board[row][col] = board[fromR][fromC];
-  board[fromR][fromC] = "EMPTY";
+  const captureAvailable = board.hasAnyCapture(game.turn);
 
-  if (isWhiteTurn && row === 0) board[row][col] = "WHITE:CROWNED";
-  if (!isWhiteTurn && row === 7) board[row][col] = "BLACK:CROWNED";
+  if (captureAvailable && moveInfo.type !== "capture") {
+    return ctx.answerCallbackQuery("Бить обязательно!");
+  }
 
-  const nextTurn = isWhiteTurn ? "black" : "white";
+  if (moveInfo.type === "capture") {
+    board.setPiece(
+      moveInfo.victim.row,
+      moveInfo.victim.col,
+      Piece.from("EMPTY"),
+    );
+  }
+
+  board.setPiece(row, col, board.getPiece(fromRow, fromCol));
+  board.setPiece(fromRow, fromCol, Piece.from("EMPTY"));
+
+  const isWhiteTurn = game.turn === "white";
+
+  if (isWhiteTurn && row === 0) {
+    board.setPiece(row, col, Piece.from("WHITE:CROWNED"));
+  }
+  if (!isWhiteTurn && row === 7) {
+    board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
+  }
+
+  const canJumpAgain =
+    moveInfo.type === "capture" && board.pieceHasCapture(row, col);
+
+  const nextTurn = canJumpAgain ? game.turn : isWhiteTurn ? "black" : "white";
+  const nextSelectedPos = canJumpAgain ? `${row},${col}` : null;
 
   await db
     .update(games)
     .set({
       board: JSON.stringify(board),
-      selectedPos: null,
+      selectedPos: nextSelectedPos,
       turn: nextTurn,
+      isJumpChain: canJumpAgain,
     })
     .where(eq(games.id, gameId));
 

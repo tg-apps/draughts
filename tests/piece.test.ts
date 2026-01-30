@@ -68,17 +68,72 @@ describe("Piece", () => {
     });
   });
 
-  describe("Piece.fromLabel", () => {
+  describe("Piece.isOfColor", () => {
+    it("should handle an empty piece", () => {
+      const piece = new Piece({ type: "empty" });
+      expect(piece.isOfColor("white")).toBeFalse();
+      expect(piece.isOfColor("black")).toBeFalse();
+    });
+
+    it("should handle a white piece", () => {
+      const piece = new Piece({
+        type: "piece",
+        color: "white",
+        variant: "default",
+      });
+      expect(piece.isOfColor("white")).toBeTrue();
+      expect(piece.isOfColor("black")).toBeFalse();
+    });
+
+    it("should handle a black piece", () => {
+      const piece = new Piece({
+        type: "piece",
+        color: "black",
+        variant: "default",
+      });
+      expect(piece.isOfColor("white")).toBeFalse();
+      expect(piece.isOfColor("black")).toBeTrue();
+    });
+  });
+
+  describe("Piece.isOfOppositeColor", () => {
+    const emptyPiece = Piece.from("EMPTY");
+    const whtiePiece = Piece.from("WHITE");
+    const blackPiece = Piece.from("BLACK");
+
+    it("should handle two empty pieces", () => {
+      expect(emptyPiece.isOfOppositeColor(emptyPiece)).toBeFalse();
+    });
+
+    it("should handle two pieces of same color", () => {
+      expect(whtiePiece.isOfOppositeColor(whtiePiece)).toBeFalse();
+      expect(blackPiece.isOfOppositeColor(blackPiece)).toBeFalse();
+    });
+
+    it("should handle two pieces of different color", () => {
+      expect(whtiePiece.isOfOppositeColor(blackPiece)).toBeTrue();
+      expect(blackPiece.isOfOppositeColor(whtiePiece)).toBeTrue();
+    });
+  });
+
+  describe("Piece.from", () => {
     it("should create an empty piece", () => {
-      const piece = Piece.fromLabel("EMPTY");
+      const piece = Piece.from("EMPTY");
       expect(piece.type).toBe("empty");
     });
 
     it("should create a white piece", () => {
-      const piece = Piece.fromLabel("WHITE");
+      const piece = Piece.from("WHITE");
       expect(piece.type).toBe("piece");
       expect(piece.color).toBe("white");
       expect(piece.variant).toBe("default");
+    });
+
+    it("should create a black crowned piece", () => {
+      const piece = Piece.from("BLACK:CROWNED");
+      expect(piece.type).toBe("piece");
+      expect(piece.color).toBe("black");
+      expect(piece.variant).toBe("crowned");
     });
   });
 });

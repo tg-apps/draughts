@@ -3,7 +3,7 @@ import type { Chat, Message, User } from "grammy/types";
 
 import { db } from "#db";
 import { games } from "#db/schema";
-import { Board } from "#game/logic";
+import { Board } from "#game/board";
 
 export async function handleStart(ctx: {
   chat: Chat;
