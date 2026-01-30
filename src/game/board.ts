@@ -1,6 +1,7 @@
 import { InlineKeyboard } from "grammy";
 
-import { Piece, type PieceLabel } from "./piece";
+import type { PieceColor, PieceLabel } from "./piece";
+import { Piece } from "./piece";
 
 export type PieceLabels = readonly (readonly PieceLabel[])[];
 export type BoardCells = readonly Piece[][];
@@ -12,7 +13,8 @@ type MoveInfo =
         | "from_empty"
         | "to_occupied"
         | "invalid_distance"
-        | "invalid_victim";
+        | "invalid_victim"
+        | "multiple_victims";
     }
   | { readonly type: "step" }
   | {
@@ -107,20 +109,20 @@ export class Board {
       const checkCol = fromCol + i * dirC;
       const checkPiece = this.getPiece(checkRow, checkCol);
 
-      if (!checkPiece.isEmpty()) {
-        // Must be an opponent
-        if (!checkPiece.isOfOppositeColor(piece)) {
-          return { type: "invalid", reason: "invalid_victim" };
-        }
+      if (checkPiece.isEmpty()) continue;
 
-        // Only one victim allowed per line (flying kings capture one per jump)
-        if (hasVictim) {
-          return { type: "invalid", reason: "invalid_victim" };
-        }
-
-        hasVictim = true;
-        victim = { row: checkRow, col: checkCol };
+      // Must be an opponent
+      if (!checkPiece.isOfOppositeColor(piece)) {
+        return { type: "invalid", reason: "invalid_victim" };
       }
+
+      // Only one victim allowed per line (flying kings capture one per jump)
+      if (hasVictim) {
+        return { type: "invalid", reason: "multiple_victims" };
+      }
+
+      hasVictim = true;
+      victim = { row: checkRow, col: checkCol };
     }
 
     const isCrowned = piece.isCrowned();
@@ -132,27 +134,29 @@ export class Board {
       }
 
       // Regular pieces: only one square forward
-      if (distance === 1) {
-        const forwardDir = piece.isOfColor("white") ? -1 : 1;
-        if (dirR === forwardDir) {
-          return { type: "step" };
-        }
+      if (distance !== 1) {
+        return { type: "invalid", reason: "invalid_distance" };
       }
-      return { type: "invalid", reason: "invalid_distance" };
+
+      const forwardDir = piece.isOfColor("white") ? -1 : 1;
+      if (dirR === forwardDir) {
+        return { type: "step" };
+      }
     }
 
     // Regular pieces can only short-jump (distance 2); kings can long-jump
-    if (isCrowned || distance === 2) {
-      if (!victim) {
-        return { type: "invalid", reason: "invalid_victim" };
-      }
-      return { type: "capture", victim };
+    if (!isCrowned && distance !== 2) {
+      return { type: "invalid", reason: "invalid_distance" };
     }
 
-    return { type: "invalid", reason: "invalid_distance" };
+    if (!victim) {
+      return { type: "invalid", reason: "invalid_victim" };
+    }
+
+    return { type: "capture", victim };
   }
 
-  hasAnyCapture(color: "white" | "black"): boolean {
+  hasAnyCapture(color: PieceColor): boolean {
     // Early exit as soon as we find any valid capture
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
@@ -197,10 +201,9 @@ export class Board {
 
       // For men: only distance === 2 is possible
       // For kings: any distance >= 2 (as long as exactly one opponent in path)
-      const startDist = isKing ? 2 : 2;
       const endDist = isKing ? maxDist : 2;
 
-      for (let d = startDist; d <= endDist; d++) {
+      for (let d = 2; d <= endDist; d++) {
         const toRow = fromRow + d * dirR;
         const toCol = fromCol + d * dirC;
 
@@ -215,12 +218,13 @@ export class Board {
           return true;
         }
 
-        // For kings: if path blocked by own piece or multiple victims, later distances are impossible
+        // For kings: if there are multiple victims, later distances are impossible
         // We can early-skip remaining distances in this direction
         if (
           isKing &&
           moveInfo.type === "invalid" &&
-          moveInfo.reason === "invalid_victim"
+          (moveInfo.reason === "invalid_victim" ||
+            moveInfo.reason === "multiple_victims")
         ) {
           break;
         }

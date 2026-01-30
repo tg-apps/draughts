@@ -93,6 +93,12 @@ export async function handleMoveCallback(
     return ctx.answerCallbackQuery("Так ходить нельзя!");
   }
 
+  const captureAvailable = board.hasAnyCapture(game.turn);
+
+  if (captureAvailable && moveInfo.type !== "capture") {
+    return ctx.answerCallbackQuery("Бить обязательно!");
+  }
+
   if (moveInfo.type === "capture") {
     board.setPiece(
       moveInfo.victim.row,
@@ -106,12 +112,18 @@ export async function handleMoveCallback(
 
   const isWhiteTurn = game.turn === "white";
 
-  if (isWhiteTurn && row === 0)
+  if (isWhiteTurn && row === 0) {
     board.setPiece(row, col, Piece.from("WHITE:CROWNED"));
-  if (!isWhiteTurn && row === 7)
+  }
+  if (!isWhiteTurn && row === 7) {
     board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
+  }
 
-  const nextTurn = isWhiteTurn ? "black" : "white";
+  const nextTurn = board.hasAnyCapture(game.turn)
+    ? game.turn
+    : isWhiteTurn
+      ? "black"
+      : "white";
 
   await db
     .update(games)
