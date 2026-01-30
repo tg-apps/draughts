@@ -8,7 +8,13 @@ export const games = sqliteTable("games", {
   board: text("board").notNull(),
   turn: text("turn").$type<"white" | "black">().default("white").notNull(),
   selectedPos: text("selected_pos"),
-  status: text("status").default("playing").notNull(),
+  isJumpChain: integer("is_jump_chain", { mode: "boolean" })
+    .default(false)
+    .notNull(),
+  status: text("status")
+    .$type<"playing" | "white_won" | "black_won" | "draw">()
+    .default("playing")
+    .notNull(),
 });
 
 export type GameInfo = (typeof games)["$inferSelect"];

@@ -162,7 +162,7 @@ export class Board {
       for (let c = 0; c < 8; c++) {
         const piece = this.getPiece(r, c);
         if (!piece.isOfColor(color)) continue;
-        if (this.#pieceHasCapture(r, c)) {
+        if (this.pieceHasCapture(r, c)) {
           return true;
         }
       }
@@ -171,9 +171,9 @@ export class Board {
   }
 
   /**
-   * @private helper: checks if the piece at (fromRow, fromCol) has at least one capture
+   * Checks if the piece at (`fromRow`, `fromCol`) has at least one capture
    */
-  #pieceHasCapture(fromRow: number, fromCol: number): boolean {
+  pieceHasCapture(fromRow: number, fromCol: number): boolean {
     const piece = this.getPiece(fromRow, fromCol);
 
     const directions: readonly (readonly [number, number])[] = [

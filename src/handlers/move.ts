@@ -119,7 +119,7 @@ export async function handleMoveCallback(
     board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
   }
 
-  const nextTurn = board.hasAnyCapture(game.turn)
+  const nextTurn = board.pieceHasCapture(row, col)
     ? game.turn
     : isWhiteTurn
       ? "black"
