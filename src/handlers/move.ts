@@ -60,23 +60,25 @@ export async function handleMoveCallback(
 
   const isOwnPiece = piece.isOfColor(game.turn);
 
-  if (!game.selectedPos) {
-    if (!isOwnPiece) return ctx.answerCallbackQuery("Выбери свою фигуру!");
-
-    await db
-      .update(games)
-      .set({ selectedPos: `${row},${col}` })
-      .where(eq(games.id, gameId));
-    return ctx.answerCallbackQuery("Фигура выбрана. Куда идем?");
-  }
-
   if (isOwnPiece) {
+    // If the player is in a jump chain, they cannot switch to another piece
+    if (game.isJumpChain && game.selectedPos !== `${row},${col}`) {
+      return ctx.answerCallbackQuery("Ты обязан бить текущей фигурой!");
+    }
+
+    // Don't allow selecting a piece that can't jump if a capture is available
+    if (!board.pieceHasCapture(row, col) && board.hasAnyCapture(game.turn)) {
+      return ctx.answerCallbackQuery("Бить обязательно! Выбери другую фигуру.");
+    }
+
     await db
       .update(games)
       .set({ selectedPos: `${row},${col}` })
       .where(eq(games.id, gameId));
-    return ctx.answerCallbackQuery("Фигура перевыбрана");
+    return ctx.answerCallbackQuery("Фигура выбрана");
   }
+
+  if (!game.selectedPos) return ctx.answerCallbackQuery("Выбери свою фигуру!");
 
   if (!piece.isEmpty()) return ctx.answerCallbackQuery("Клетка занята!");
 
@@ -119,18 +121,19 @@ export async function handleMoveCallback(
     board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
   }
 
-  const nextTurn = board.pieceHasCapture(row, col)
-    ? game.turn
-    : isWhiteTurn
-      ? "black"
-      : "white";
+  const canJumpAgain =
+    moveInfo.type === "capture" && board.pieceHasCapture(row, col);
+
+  const nextTurn = canJumpAgain ? game.turn : isWhiteTurn ? "black" : "white";
+  const nextSelectedPos = canJumpAgain ? `${row},${col}` : null;
 
   await db
     .update(games)
     .set({
       board: JSON.stringify(board),
-      selectedPos: null,
+      selectedPos: nextSelectedPos,
       turn: nextTurn,
+      isJumpChain: canJumpAgain,
     })
     .where(eq(games.id, gameId));
 
