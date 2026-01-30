@@ -1,6 +1,7 @@
 import { InlineKeyboard } from "grammy";
 
 import type { PieceColor, PieceLabel } from "./piece";
+
 import { Piece } from "./piece";
 
 export type PieceLabels = readonly (readonly PieceLabel[])[];
