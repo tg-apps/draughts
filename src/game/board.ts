@@ -54,8 +54,9 @@ export class Board {
     return piece;
   }
 
-  setPiece(row: number, col: number, piece: Piece): void {
+  setPiece(row: number, col: number, piece: Piece | PieceLabel): void {
     if (!this.#cells[row]?.[col]) throw new Error("Cell not found");
+    if (typeof piece === "string") piece = Piece.from(piece);
     this.#cells[row][col] = piece;
   }
 

@@ -4,7 +4,6 @@ import type { User } from "grammy/types";
 import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
-import { Piece } from "#game/piece";
 import { eq } from "drizzle-orm";
 
 function parseData(data: string): { gameId: number; row: number; col: number } {
@@ -98,23 +97,19 @@ export async function handleMoveCallback(
   }
 
   if (moveInfo.type === "capture") {
-    board.setPiece(
-      moveInfo.victim.row,
-      moveInfo.victim.col,
-      Piece.from("EMPTY"),
-    );
+    board.setPiece(moveInfo.victim.row, moveInfo.victim.col, "EMPTY");
   }
 
   board.setPiece(row, col, board.getPiece(fromRow, fromCol));
-  board.setPiece(fromRow, fromCol, Piece.from("EMPTY"));
+  board.setPiece(fromRow, fromCol, "EMPTY");
 
   const isWhiteTurn = game.turn === "white";
 
   if (isWhiteTurn && row === 0) {
-    board.setPiece(row, col, Piece.from("WHITE:CROWNED"));
+    board.setPiece(row, col, "WHITE:CROWNED");
   }
   if (!isWhiteTurn && row === 7) {
-    board.setPiece(row, col, Piece.from("BLACK:CROWNED"));
+    board.setPiece(row, col, "BLACK:CROWNED");
   }
 
   const canJumpAgain =

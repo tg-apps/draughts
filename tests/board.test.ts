@@ -1,5 +1,10 @@
+import type { PieceLabel } from "#game/piece";
+
 import { Board, type PieceLabels } from "#game/board";
 import { describe, expect, it } from "bun:test";
+
+const getEmptyLabels = () =>
+  Array.from({ length: 8 }, () => Array<PieceLabel>(8).fill("EMPTY"));
 
 describe("Board", () => {
   const testLabels: PieceLabels = [
@@ -206,12 +211,10 @@ describe("Board", () => {
 
     describe("regular piece captures", () => {
       it("allows forward capture", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[4][1] = "WHITE";
-        labels[3][2] = "BLACK";
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(4, 1, "WHITE");
+        board.setPiece(3, 2, "BLACK");
 
         expect(
           board.getMoveInfo({ fromRow: 4, fromCol: 1, toRow: 2, toCol: 3 }),
@@ -222,12 +225,10 @@ describe("Board", () => {
       });
 
       it("allows backward capture", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[3][3] = "WHITE";
-        labels[4][4] = "BLACK";
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(3, 3, "WHITE");
+        board.setPiece(4, 4, "BLACK");
 
         expect(
           board.getMoveInfo({ fromRow: 3, fromCol: 3, toRow: 5, toCol: 5 }),
@@ -238,12 +239,10 @@ describe("Board", () => {
       });
 
       it("disallows capture over own piece", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[4][1] = "WHITE";
-        labels[3][2] = "WHITE"; // own color
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(4, 1, "WHITE");
+        board.setPiece(3, 2, "WHITE");
 
         expect(
           board.getMoveInfo({ fromRow: 4, fromCol: 1, toRow: 2, toCol: 3 }),
@@ -251,12 +250,10 @@ describe("Board", () => {
       });
 
       it("disallows long capture for regular piece", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[6][1] = "WHITE";
-        labels[4][3] = "BLACK";
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(6, 1, "WHITE");
+        board.setPiece(4, 3, "BLACK");
 
         expect(
           board.getMoveInfo({ fromRow: 6, fromCol: 1, toRow: 2, toCol: 5 }),
@@ -266,11 +263,9 @@ describe("Board", () => {
 
     describe("king moves and captures", () => {
       it("allows king to step any distance diagonally if path is clear", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[7][1] = "WHITE:CROWNED";
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(7, 1, "WHITE:CROWNED");
 
         // short step
         expect(
@@ -284,12 +279,10 @@ describe("Board", () => {
       });
 
       it("allows king long capture with single victim", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[7][1] = "WHITE:CROWNED";
-        labels[5][3] = "BLACK";
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(7, 1, "WHITE:CROWNED");
+        board.setPiece(5, 3, "BLACK");
 
         expect(
           board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
@@ -300,12 +293,10 @@ describe("Board", () => {
       });
 
       it("disallows king step when path is blocked by own piece", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[7][1] = "WHITE:CROWNED";
-        labels[5][3] = "WHITE"; // own piece in path
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(7, 1, "WHITE:CROWNED");
+        board.setPiece(5, 3, "WHITE"); // own piece in path
 
         expect(
           board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
@@ -313,13 +304,11 @@ describe("Board", () => {
       });
 
       it("disallows capture when multiple victims are in the path", () => {
-        const labels: PieceLabels = Array.from({ length: 8 }, () =>
-          Array(8).fill("EMPTY"),
-        );
-        labels[7][1] = "WHITE:CROWNED";
-        labels[5][3] = "BLACK";
-        labels[4][4] = "BLACK"; // second victim
+        const labels = getEmptyLabels();
         const board = new Board(labels);
+        board.setPiece(7, 1, "WHITE:CROWNED");
+        board.setPiece(5, 3, "BLACK");
+        board.setPiece(4, 4, "BLACK"); // second victim
 
         expect(
           board.getMoveInfo({ fromRow: 7, fromCol: 1, toRow: 3, toCol: 5 }),
@@ -337,107 +326,91 @@ describe("Board", () => {
 
     it("returns false when there are pieces of the color but no possible captures", () => {
       // All pieces are isolated with no opponent in any capture position
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[4][1] = "WHITE";
-      labels[4][3] = "WHITE";
-      labels[2][1] = "BLACK";
-      labels[2][5] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      board.setPiece(4, 1, "WHITE");
+      board.setPiece(4, 3, "WHITE");
+      board.setPiece(2, 1, "BLACK");
+      board.setPiece(2, 5, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeFalse();
       expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular white man can capture (forward)", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      // Near edge to prevent mutual capture
-      labels[4][7] = "WHITE";
-      labels[3][6] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      // Near edge to prevent mutual capture
+      board.setPiece(4, 7, "WHITE");
+      board.setPiece(3, 6, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeTrue();
       expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular white man can capture (backward)", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      // Near edge to prevent mutual capture
-      labels[3][7] = "WHITE";
-      labels[4][6] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      // Near edge to prevent mutual capture
+      board.setPiece(3, 7, "WHITE");
+      board.setPiece(4, 6, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeTrue();
       expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns true when a regular black man can capture", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      // Near edge to prevent mutual capture
-      labels[3][0] = "BLACK";
-      labels[4][1] = "WHITE";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      // Near edge to prevent mutual capture
+      board.setPiece(3, 0, "BLACK");
+      board.setPiece(4, 1, "WHITE");
 
       expect(board.hasAnyCapture("black")).toBeTrue();
       expect(board.hasAnyCapture("white")).toBeFalse();
     });
 
     it("returns true when a king can make a long capture", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[7][1] = "WHITE:CROWNED";
-      labels[5][3] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      board.setPiece(7, 1, "WHITE:CROWNED");
+      board.setPiece(5, 3, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeTrue();
       expect(board.hasAnyCapture("black")).toBeFalse();
     });
 
     it("returns false for a king when potential captures are invalid (blocked path, own piece, multiple victims)", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      // Own piece blocking
-      labels[7][1] = "WHITE:CROWNED";
-      labels[5][3] = "WHITE";
-      // Multiple victims scenario
-      labels[6][3] = "WHITE:CROWNED";
-      labels[4][5] = "BLACK";
-      labels[3][6] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      // Own piece blocking
+      board.setPiece(7, 1, "WHITE:CROWNED");
+      board.setPiece(5, 3, "WHITE");
+      // Multiple victims scenario
+      board.setPiece(6, 3, "WHITE:CROWNED");
+      board.setPiece(4, 5, "BLACK");
+      board.setPiece(3, 6, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeFalse();
     });
 
     it("returns true when at least one piece of the color has a capture (among many pieces)", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
+      const labels = getEmptyLabels();
       // Several white pieces, only one can capture
-      labels[4][3] = "WHITE";
-      labels[4][5] = "WHITE";
-      labels[3][4] = "BLACK";
-      labels[2][5] = "WHITE";
       const board = new Board(labels);
+      board.setPiece(4, 3, "WHITE");
+      board.setPiece(4, 5, "WHITE");
+      board.setPiece(3, 4, "BLACK");
+      board.setPiece(2, 5, "WHITE");
 
       expect(board.hasAnyCapture("white")).toBeTrue();
     });
 
     it("handles crowned pieces correctly (king with short capture)", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[4][1] = "WHITE:CROWNED";
-      labels[3][2] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      board.setPiece(4, 1, "WHITE:CROWNED");
+      board.setPiece(3, 2, "BLACK");
 
       expect(board.hasAnyCapture("white")).toBeTrue();
     });
@@ -457,29 +430,25 @@ describe("Board", () => {
     });
 
     it("returns true for a piece that can only capture", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[4][4] = "WHITE";
-      labels[3][3] = "BLACK";
+      const labels = getEmptyLabels();
+      const board = new Board(labels);
+      board.setPiece(4, 4, "WHITE");
+      board.setPiece(3, 3, "BLACK");
       // White is blocked from stepping forward-left by the black piece,
       // but pieceHasCapture should return true.
-      const board = new Board(labels);
       expect(board.pieceHasAnyMove(4, 4)).toBeTrue();
     });
 
     it("returns false for a king completely surrounded", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[4][4] = "WHITE:CROWNED";
-      // Surround with own pieces
-      labels[3][3] = "WHITE";
-      labels[3][5] = "WHITE";
-      labels[5][3] = "WHITE";
-      labels[5][5] = "WHITE";
-
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      board.setPiece(4, 4, "WHITE:CROWNED");
+      // Surround with own pieces
+      board.setPiece(3, 3, "WHITE");
+      board.setPiece(3, 5, "WHITE");
+      board.setPiece(5, 3, "WHITE");
+      board.setPiece(5, 5, "WHITE");
+
       expect(board.pieceHasAnyMove(4, 4)).toBeFalse();
     });
   });
@@ -492,30 +461,25 @@ describe("Board", () => {
     });
 
     it("returns false when a player has no pieces left", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
-      labels[0][1] = "BLACK";
+      const labels = getEmptyLabels();
       const board = new Board(labels);
+      board.setPiece(0, 1, "BLACK");
 
       expect(board.hasAnyMove("white")).toBeFalse();
       expect(board.hasAnyMove("black")).toBeTrue();
     });
 
     it("returns false (stalemate) when all pieces are blocked", () => {
-      const labels: PieceLabels = Array.from({ length: 8 }, () =>
-        Array(8).fill("EMPTY"),
-      );
+      const labels = getEmptyLabels();
+      const board = new Board(labels);
 
       // White piece near the edge
-      labels[0][7] = "WHITE";
+      board.setPiece(0, 7, "WHITE");
 
       // 1. Block the only possible forward step (though 0,7 is already at the edge)
       // 2. Block the only possible backward jump landing square
-      labels[1][6] = "BLACK"; // Victim
-      labels[2][5] = "BLACK"; // Landing square blocked!
-
-      const board = new Board(labels);
+      board.setPiece(1, 6, "BLACK"); // Victim
+      board.setPiece(2, 5, "BLACK"); // Landing square blocked!
 
       // White can't move forward (off-board)
       // White can't step backward (regular pieces only move forward)
