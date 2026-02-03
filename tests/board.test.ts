@@ -442,4 +442,85 @@ describe("Board", () => {
       expect(board.hasAnyCapture("white")).toBeTrue();
     });
   });
+
+  describe("Board.pieceHasAnyMove", () => {
+    it("returns true for white pieces in starting position", () => {
+      const board = new Board();
+      // White piece at (5, 0) can move to (4, 1)
+      expect(board.pieceHasAnyMove(5, 0)).toBeTrue();
+    });
+
+    it("returns false for pieces blocked by their own team", () => {
+      const board = new Board();
+      // Black piece at (0, 1) is blocked by the row in front of it
+      expect(board.pieceHasAnyMove(0, 1)).toBeFalse();
+    });
+
+    it("returns true for a piece that can only capture", () => {
+      const labels: PieceLabels = Array.from({ length: 8 }, () =>
+        Array(8).fill("EMPTY"),
+      );
+      labels[4][4] = "WHITE";
+      labels[3][3] = "BLACK";
+      // White is blocked from stepping forward-left by the black piece,
+      // but pieceHasCapture should return true.
+      const board = new Board(labels);
+      expect(board.pieceHasAnyMove(4, 4)).toBeTrue();
+    });
+
+    it("returns false for a king completely surrounded", () => {
+      const labels: PieceLabels = Array.from({ length: 8 }, () =>
+        Array(8).fill("EMPTY"),
+      );
+      labels[4][4] = "WHITE:CROWNED";
+      // Surround with own pieces
+      labels[3][3] = "WHITE";
+      labels[3][5] = "WHITE";
+      labels[5][3] = "WHITE";
+      labels[5][5] = "WHITE";
+
+      const board = new Board(labels);
+      expect(board.pieceHasAnyMove(4, 4)).toBeFalse();
+    });
+  });
+
+  describe("Board.hasAnyMove", () => {
+    it("returns true for both colors on initial board", () => {
+      const board = new Board();
+      expect(board.hasAnyMove("white")).toBeTrue();
+      expect(board.hasAnyMove("black")).toBeTrue();
+    });
+
+    it("returns false when a player has no pieces left", () => {
+      const labels: PieceLabels = Array.from({ length: 8 }, () =>
+        Array(8).fill("EMPTY"),
+      );
+      labels[0][1] = "BLACK";
+      const board = new Board(labels);
+
+      expect(board.hasAnyMove("white")).toBeFalse();
+      expect(board.hasAnyMove("black")).toBeTrue();
+    });
+
+    it("returns false (stalemate) when all pieces are blocked", () => {
+      const labels: PieceLabels = Array.from({ length: 8 }, () =>
+        Array(8).fill("EMPTY"),
+      );
+
+      // White piece near the edge
+      labels[0][7] = "WHITE";
+
+      // 1. Block the only possible forward step (though 0,7 is already at the edge)
+      // 2. Block the only possible backward jump landing square
+      labels[1][6] = "BLACK"; // Victim
+      labels[2][5] = "BLACK"; // Landing square blocked!
+
+      const board = new Board(labels);
+
+      // White can't move forward (off-board)
+      // White can't step backward (regular pieces only move forward)
+      // White can't jump backward because (2,5) is occupied
+      expect(board.hasAnyMove("white")).toBeFalse();
+    });
+  });
 });

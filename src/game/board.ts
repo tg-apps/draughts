@@ -234,4 +234,63 @@ export class Board {
 
     return false;
   }
+
+  /**
+   * Checks if the player of the given color has any valid move (step or capture) remaining.
+   * Useful for determining if a player has lost or is in a stalemate.
+   */
+  hasAnyMove(color: PieceColor): boolean {
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const piece = this.getPiece(r, c);
+        // Only check pieces belonging to the current player
+        if (piece.isOfColor(color) && this.pieceHasAnyMove(r, c)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Checks if a specific piece can make any valid move (step or capture).
+   */
+  pieceHasAnyMove(fromRow: number, fromCol: number): boolean {
+    // 1. Check for possible captures (Jumps)
+    // This leverages your existing flying king logic in pieceHasCapture
+    if (this.pieceHasCapture(fromRow, fromCol)) {
+      return true;
+    }
+
+    // 2. Check for possible steps (Slides)
+    const directions: readonly (readonly [number, number])[] = [
+      [-1, -1],
+      [-1, 1],
+      [1, -1],
+      [1, 1],
+    ];
+
+    for (const [dirR, dirC] of directions) {
+      const toRow = fromRow + dirR;
+      const toCol = fromCol + dirC;
+
+      // Stay within board boundaries
+      if (toRow < 0 || toRow >= 8 || toCol < 0 || toCol >= 8) continue;
+
+      const moveInfo = this.getMoveInfo({
+        fromRow,
+        fromCol,
+        toRow,
+        toCol,
+      });
+
+      // If the piece can take at least one step in this direction, it can move
+      // Note: For Kings, if they can't step to distance 1, they can't step to distance 2+
+      if (moveInfo.type === "step") {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
