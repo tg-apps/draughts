@@ -5,11 +5,9 @@ import { db } from "#db";
 import { games } from "#db/schema";
 import { Board } from "#game/board";
 
-export async function handleStart(ctx: {
-  chat: Chat;
-  from: User;
-  reply: Context["reply"];
-}): Promise<Message.TextMessage> {
+export async function handleNewgame(
+  ctx: Context & { from: User; chat: Chat },
+): Promise<Message.TextMessage> {
   const initialBoard = new Board();
   const [newGame] = await db
     .insert(games)

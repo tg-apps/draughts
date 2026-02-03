@@ -1,15 +1,17 @@
 import { run } from "@grammyjs/runner";
 import { Bot, GrammyError } from "grammy";
 
+import { handleHelp } from "./handlers/help";
 import { handleMoveCallback } from "./handlers/move";
-import { handleStart } from "./handlers/start";
+import { handleNewgame } from "./handlers/newgame";
 
 const TOKEN = process.env["TOKEN"];
 if (!TOKEN) throw new Error("Missing TOKEN env variable");
 
 const bot = new Bot(TOKEN);
 
-bot.on("message").command(["start", "game", "draughts"], handleStart);
+bot.on("message").command(["start", "help"], handleHelp);
+bot.on("message").command(["newgame", "game", "draughts"], handleNewgame);
 bot.on("callback_query:data", (ctx) => {
   const data = ctx.callbackQuery.data;
   if (!data.startsWith("move:")) return;

@@ -30,11 +30,7 @@ function parsePos(pos: string): { row: number; col: number } {
 }
 
 export async function handleMoveCallback(
-  ctx: {
-    from: User;
-    answerCallbackQuery: Context["answerCallbackQuery"];
-    editMessageText: Context["editMessageText"];
-  },
+  ctx: Context & { from: User },
   data: string,
 ): Promise<true | undefined> {
   const { gameId, row, col } = parseData(data);
