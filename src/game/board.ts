@@ -158,6 +158,34 @@ export class Board {
     return { type: "capture", victim };
   }
 
+  makeMove(
+    move: {
+      fromRow: number;
+      fromCol: number;
+      row: number;
+      col: number;
+    },
+    moveInfo: Exclude<MoveInfo, { type: "invalid" }>,
+  ) {
+    if (moveInfo.type === "capture") {
+      this.setPiece(moveInfo.victim.row, moveInfo.victim.col, "EMPTY");
+    }
+
+    const piece = this.getPiece(move.fromRow, move.fromCol);
+
+    this.setPiece(move.row, move.col, piece);
+    this.setPiece(move.fromRow, move.fromCol, "EMPTY");
+
+    const isWhiteTurn = piece.color === "white";
+
+    if (isWhiteTurn && move.row === 0) {
+      this.setPiece(move.row, move.col, "WHITE:CROWNED");
+    }
+    if (!isWhiteTurn && move.row === 7) {
+      this.setPiece(move.row, move.col, "BLACK:CROWNED");
+    }
+  }
+
   hasAnyCapture(color: PieceColor): boolean {
     // Early exit as soon as we find any valid capture
     for (let r = 0; r < 8; r++) {
@@ -258,7 +286,6 @@ export class Board {
    */
   pieceHasAnyMove(fromRow: number, fromCol: number): boolean {
     // 1. Check for possible captures (Jumps)
-    // This leverages your existing flying king logic in pieceHasCapture
     if (this.pieceHasCapture(fromRow, fromCol)) {
       return true;
     }

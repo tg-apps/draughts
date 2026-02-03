@@ -31,7 +31,7 @@ function parsePos(pos: string): { row: number; col: number } {
 export async function handleMoveCallback(
   ctx: Context & { from: User },
   data: string,
-): Promise<true | undefined> {
+): Promise<true> {
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
 
@@ -100,23 +100,36 @@ export async function handleMoveCallback(
     board.setPiece(moveInfo.victim.row, moveInfo.victim.col, "EMPTY");
   }
 
-  board.setPiece(row, col, board.getPiece(fromRow, fromCol));
-  board.setPiece(fromRow, fromCol, "EMPTY");
-
-  const isWhiteTurn = game.turn === "white";
-
-  if (isWhiteTurn && row === 0) {
-    board.setPiece(row, col, "WHITE:CROWNED");
-  }
-  if (!isWhiteTurn && row === 7) {
-    board.setPiece(row, col, "BLACK:CROWNED");
-  }
+  board.makeMove({ fromRow, fromCol, row, col }, moveInfo);
 
   const canJumpAgain =
     moveInfo.type === "capture" && board.pieceHasCapture(row, col);
 
+  const isWhiteTurn = game.turn === "white";
+
   const nextTurn = canJumpAgain ? game.turn : isWhiteTurn ? "black" : "white";
   const nextSelectedPos = canJumpAgain ? `${row},${col}` : null;
+
+  const canNextPlayerMove = board.hasAnyMove(nextTurn);
+
+  if (!canNextPlayerMove) {
+    // Current player wins because the next player is stuck or out of pieces
+    const winnerLabel = isWhiteTurn ? "Белые ⚪" : "Черные ⚫";
+
+    await db
+      .update(games)
+      .set({
+        board: JSON.stringify(board),
+        status: isWhiteTurn ? "white_won" : "black_won",
+        selectedPos: null,
+      })
+      .where(eq(games.id, gameId));
+
+    await ctx.editMessageText(`🎉 Игра окончена! Победили ${winnerLabel}!`, {
+      reply_markup: board.render(gameId),
+    });
+    return ctx.answerCallbackQuery("Игра окончена!");
+  }
 
   await db
     .update(games)
@@ -133,5 +146,5 @@ export async function handleMoveCallback(
     { reply_markup: board.render(gameId) },
   );
 
-  await ctx.answerCallbackQuery();
+  return await ctx.answerCallbackQuery();
 }
