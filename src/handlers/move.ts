@@ -6,6 +6,7 @@ import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName, upsertUser } from "#utils/user";
 import { eq } from "drizzle-orm";
+import type { PieceColor } from "#game/piece";
 
 function parseData(data: string): { gameId: number; row: number; col: number } {
   const [, gameIdStr, r, c] = data.split(":");
@@ -147,14 +148,18 @@ export async function handleMoveCallback(
     })
     .where(eq(games.id, gameId));
 
+  await ctx.editMessageText(getMessageText(game, nextTurn), {
+    reply_markup: board.render(gameId),
+  });
+
+  return await ctx.answerCallbackQuery();
+}
+
+function getMessageText(game: GameInfo, nextTurn: PieceColor) {
+  const whiteInfo = `Белые: ${getUserDisplayName(game.whitePlayer)}`;
   const blackInfo = game.blackPlayer
     ? `\nЧерные: ${getUserDisplayName(game.blackPlayer)}`
     : "";
-
-  await ctx.editMessageText(
-    `Белые: ${getUserDisplayName(game.whitePlayer)}${blackInfo}\n\nХод: ${nextTurn === "white" ? "Белые ⚪" : "Черные ⚫"}`,
-    { reply_markup: board.render(gameId) },
-  );
-
-  return await ctx.answerCallbackQuery();
+  const moveInfo = nextTurn === "white" ? "Белые ⚪" : "Черные ⚫";
+  return ` ${whiteInfo}${blackInfo}\n\nХод: ${moveInfo}`;
 }
