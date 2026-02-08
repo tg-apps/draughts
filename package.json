@@ -5,7 +5,8 @@
   "imports": {
     "#db": "./src/db/index.ts",
     "#db/schema": "./src/db/schema.ts",
-    "#game/*": "./src/game/*.ts"
+    "#game/*": "./src/game/*.ts",
+    "#utils/*": "./src/utils/*.ts"
   },
   "scripts": {
     "test": "bun test --coverage",

@@ -4,6 +4,7 @@ import type { User } from "grammy/types";
 import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
+import { getUserDisplayName, upsertUser } from "#utils/user";
 import { eq } from "drizzle-orm";
 
 function parseData(data: string): { gameId: number; row: number; col: number } {
@@ -32,11 +33,13 @@ export async function handleMoveCallback(
   ctx: Context & { from: User },
   data: string,
 ): Promise<true> {
+  upsertUser(ctx.from);
+
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
 
   const game = await db.query.games.findFirst({ where: eq(games.id, gameId) });
-  if (!game) return ctx.answerCallbackQuery("Игра не найдена");
+  if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
 
   if (!game.blackPlayer && userId !== game.whitePlayer) {
     await db
@@ -47,7 +50,7 @@ export async function handleMoveCallback(
   }
 
   if (!isTheirTurn(game, userId)) {
-    return ctx.answerCallbackQuery("Сейчас не твой ход!");
+    return await ctx.answerCallbackQuery("Сейчас не твой ход!");
   }
 
   const board = Board.fromJSON(game.board);
@@ -58,24 +61,27 @@ export async function handleMoveCallback(
   if (isOwnPiece) {
     // If the player is in a jump chain, they cannot switch to another piece
     if (game.isJumpChain && game.selectedPos !== `${row},${col}`) {
-      return ctx.answerCallbackQuery("Ты обязан бить текущей фигурой!");
+      return await ctx.answerCallbackQuery("Ты обязан бить текущей фигурой!");
     }
 
     // Don't allow selecting a piece that can't jump if a capture is available
     if (!board.pieceHasCapture(row, col) && board.hasAnyCapture(game.turn)) {
-      return ctx.answerCallbackQuery("Бить обязательно! Выбери другую фигуру.");
+      return await ctx.answerCallbackQuery(
+        "Бить обязательно! Выбери другую фигуру.",
+      );
     }
 
     await db
       .update(games)
       .set({ selectedPos: `${row},${col}` })
       .where(eq(games.id, gameId));
-    return ctx.answerCallbackQuery("Фигура выбрана");
+    return await ctx.answerCallbackQuery("Фигура выбрана");
   }
 
-  if (!game.selectedPos) return ctx.answerCallbackQuery("Выбери свою фигуру!");
+  if (!game.selectedPos)
+    return await ctx.answerCallbackQuery("Выбери свою фигуру!");
 
-  if (!piece.isEmpty()) return ctx.answerCallbackQuery("Клетка занята!");
+  if (!piece.isEmpty()) return await ctx.answerCallbackQuery("Клетка занята!");
 
   const { row: fromRow, col: fromCol } = parsePos(game.selectedPos);
 
@@ -87,13 +93,13 @@ export async function handleMoveCallback(
   });
 
   if (moveInfo.type === "invalid") {
-    return ctx.answerCallbackQuery("Так ходить нельзя!");
+    return await ctx.answerCallbackQuery("Так ходить нельзя!");
   }
 
   const captureAvailable = board.hasAnyCapture(game.turn);
 
   if (captureAvailable && moveInfo.type !== "capture") {
-    return ctx.answerCallbackQuery("Бить обязательно!");
+    return await ctx.answerCallbackQuery("Бить обязательно!");
   }
 
   if (moveInfo.type === "capture") {
@@ -128,7 +134,7 @@ export async function handleMoveCallback(
     await ctx.editMessageText(`🎉 Игра окончена! Победили ${winnerLabel}!`, {
       reply_markup: board.render(gameId),
     });
-    return ctx.answerCallbackQuery("Игра окончена!");
+    return await ctx.answerCallbackQuery("Игра окончена!");
   }
 
   await db
@@ -141,8 +147,12 @@ export async function handleMoveCallback(
     })
     .where(eq(games.id, gameId));
 
+  const blackInfo = game.blackPlayer
+    ? `\nЧерные: ${getUserDisplayName(game.blackPlayer)}`
+    : "";
+
   await ctx.editMessageText(
-    `Ход: ${nextTurn === "white" ? "Белые ⚪" : "Черные ⚫"}`,
+    `Белые: ${getUserDisplayName(game.whitePlayer)}${blackInfo}\n\nХод: ${nextTurn === "white" ? "Белые ⚪" : "Черные ⚫"}`,
     { reply_markup: board.render(gameId) },
   );
 

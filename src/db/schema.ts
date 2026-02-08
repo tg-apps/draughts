@@ -11,6 +11,8 @@ export const users = sqliteTable(
   (table) => [index("idx_users_user_id").on(table.userId)],
 );
 
+export type UserData = (typeof users)["$inferSelect"];
+
 export const games = sqliteTable(
   "games",
   {

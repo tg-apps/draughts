@@ -4,12 +4,15 @@ import type { Chat, Message, User } from "grammy/types";
 import { db } from "#db";
 import { games } from "#db/schema";
 import { Board } from "#game/board";
+import { upsertUser, getUserDisplayName } from "#utils/user";
 
 export async function handleNewgame(
   ctx: Context & { from: User; chat: Chat },
 ): Promise<Message.TextMessage> {
+  upsertUser(ctx.from);
+
   const initialBoard = new Board();
-  const [newGame] = await db
+  const newGame = db
     .insert(games)
     .values({
       chatId: ctx.chat.id,
@@ -18,12 +21,13 @@ export async function handleNewgame(
       turn: "white",
       status: "playing",
     })
-    .returning({ id: games.id });
+    .returning({ id: games.id })
+    .get();
 
-  if (!newGame) throw new Error("Failed to create new game");
+  const whitePlayerName = getUserDisplayName(ctx.from.id);
 
   return await ctx.reply(
-    `Игра началась!\nБелые: ${ctx.from.first_name}\nЧерные: ожидаем хода противника...`,
+    `Игра началась!\nБелые: ${whitePlayerName}\n\nХод: Белые ⚪`,
     { reply_markup: initialBoard.render(newGame.id) },
   );
 }
