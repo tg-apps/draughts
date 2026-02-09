@@ -27,7 +27,7 @@ export async function handleNewgame(
   const whitePlayerName = getUserDisplayName(ctx.from.id);
 
   return await ctx.reply(
-    `Игра началась!\nБелые: ${whitePlayerName}\n\nХод: Белые ⚪`,
+    `Игра началась!\n\n⚪ Ход: Белые, ${whitePlayerName} ваш ход`,
     { reply_markup: initialBoard.render(newGame.id) },
   );
 }

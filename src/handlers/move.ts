@@ -6,7 +6,6 @@ import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName, upsertUser } from "#utils/user";
 import { eq } from "drizzle-orm";
-import type { PieceColor } from "#game/piece";
 
 function parseData(data: string): { gameId: number; row: number; col: number } {
   const [, gameIdStr, r, c] = data.split(":");
@@ -34,8 +33,6 @@ export async function handleMoveCallback(
   ctx: Context & { from: User },
   data: string,
 ): Promise<true> {
-  upsertUser(ctx.from);
-
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
 
@@ -43,6 +40,7 @@ export async function handleMoveCallback(
   if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
 
   if (!game.blackPlayer && userId !== game.whitePlayer) {
+    upsertUser(ctx.from);
     await db
       .update(games)
       .set({ blackPlayer: userId })
@@ -132,9 +130,10 @@ export async function handleMoveCallback(
       })
       .where(eq(games.id, gameId));
 
-    await ctx.editMessageText(`🎉 Игра окончена! Победили ${winnerLabel}!`, {
-      reply_markup: board.render(gameId),
-    });
+    await ctx.editMessageText(
+      `🎉 Игра окончена! Победили ${winnerLabel}! ${getPlayersInfo(game)}`,
+      { reply_markup: board.render(gameId) },
+    );
     return await ctx.answerCallbackQuery("Игра окончена!");
   }
 
@@ -148,18 +147,21 @@ export async function handleMoveCallback(
     })
     .where(eq(games.id, gameId));
 
-  await ctx.editMessageText(getMessageText(game, nextTurn), {
+  const moveInfoText = nextTurn === "white" ? "Белые ⚪" : "Черные ⚫";
+  const playersInfo = getPlayersInfo(game);
+  const messageText = `Ход: ${moveInfoText}\n\n${playersInfo}`;
+
+  await ctx.editMessageText(messageText, {
     reply_markup: board.render(gameId),
   });
 
   return await ctx.answerCallbackQuery();
 }
 
-function getMessageText(game: GameInfo, nextTurn: PieceColor) {
+function getPlayersInfo(game: GameInfo) {
   const whiteInfo = `Белые: ${getUserDisplayName(game.whitePlayer)}`;
   const blackInfo = game.blackPlayer
     ? `\nЧерные: ${getUserDisplayName(game.blackPlayer)}`
     : "";
-  const moveInfo = nextTurn === "white" ? "Белые ⚪" : "Черные ⚫";
-  return ` ${whiteInfo}${blackInfo}\n\nХод: ${moveInfo}`;
+  return `${whiteInfo}${blackInfo}`;
 }
