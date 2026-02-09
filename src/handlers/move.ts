@@ -48,11 +48,16 @@ export async function handleMoveCallback(
     game.blackPlayer = userId;
   }
 
+  const board = Board.fromJSON(game.board);
+
   if (!isTheirTurn(game, userId)) {
+    const text = ctx.callbackQuery?.message?.text;
+    if (text) {
+      await ctx.editMessageText(text, { reply_markup: board.render(gameId) });
+    }
     return await ctx.answerCallbackQuery("Сейчас не твой ход!");
   }
 
-  const board = Board.fromJSON(game.board);
   const piece = board.getPiece(row, col);
 
   const isOwnPiece = piece.isOfColor(game.turn);
@@ -131,7 +136,7 @@ export async function handleMoveCallback(
       .where(eq(games.id, gameId));
 
     await ctx.editMessageText(
-      `🎉 Игра окончена! Победили ${winnerLabel}! ${getPlayersInfo(game)}`,
+      `🎉 Игра окончена! Победили ${winnerLabel}!\n\n${getPlayersInfo(game)}`,
       { reply_markup: board.render(gameId) },
     );
     return await ctx.answerCallbackQuery("Игра окончена!");
