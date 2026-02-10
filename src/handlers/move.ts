@@ -1,5 +1,5 @@
 import type { Context } from "grammy";
-import type { CallbackQuery, User } from "grammy/types";
+import type { User } from "grammy/types";
 
 import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";

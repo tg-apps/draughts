@@ -32,5 +32,11 @@ bot.catch((err) => {
 const runner = run(bot);
 const stopRunner = () => runner.isRunning() && runner.stop();
 
-process.once("SIGINT", stopRunner);
-process.once("SIGTERM", stopRunner);
+process.once("SIGINT", () => {
+  console.error("SIGINT");
+  stopRunner();
+});
+process.once("SIGTERM", () => {
+  console.error("SIGTERM");
+  stopRunner();
+});
