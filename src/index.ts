@@ -18,9 +18,6 @@ bot.on("callback_query:data", (ctx) => {
   handleMoveCallback(ctx, data);
 });
 
-const runner = run(bot);
-const stopRunner = () => runner.isRunning() && runner.stop();
-
 bot.catch((err) => {
   const ctx = err.ctx;
   console.error(`Error while handling update ${ctx.update.update_id}:`);
@@ -31,6 +28,9 @@ bot.catch((err) => {
     console.error("Unknown error:", e);
   }
 });
+
+const runner = run(bot);
+const stopRunner = () => runner.isRunning() && runner.stop();
 
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
