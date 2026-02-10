@@ -1,5 +1,5 @@
 import type { Context } from "grammy";
-import type { User } from "grammy/types";
+import type { CallbackQuery, User } from "grammy/types";
 
 import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";
@@ -51,10 +51,9 @@ export async function handleMoveCallback(
   const board = Board.fromJSON(game.board);
 
   if (!isTheirTurn(game, userId)) {
-    const text = ctx.callbackQuery?.message?.text;
-    if (text) {
-      await ctx.editMessageText(text, { reply_markup: board.render(gameId) });
-    }
+    try {
+      await ctx.editMessageReplyMarkup({ reply_markup: board.render(gameId) });
+    } catch {}
     return await ctx.answerCallbackQuery("Сейчас не твой ход!");
   }
 
