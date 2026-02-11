@@ -15,7 +15,7 @@ bot.on("message").command(["newgame", "game", "draughts"], handleNewgame);
 bot.on("callback_query:data", (ctx) => {
   const data = ctx.callbackQuery.data;
   if (!data.startsWith("move:")) return;
-  handleMoveCallback(ctx, data);
+  return handleMoveCallback(ctx, data);
 });
 
 bot.catch((err) => {
@@ -34,9 +34,9 @@ const stopRunner = () => runner.isRunning() && runner.stop();
 
 process.once("SIGINT", () => {
   console.error("SIGINT");
-  stopRunner();
+  void stopRunner();
 });
 process.once("SIGTERM", () => {
   console.error("SIGTERM");
-  stopRunner();
+  void stopRunner();
 });

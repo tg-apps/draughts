@@ -51,10 +51,9 @@ export async function handleMoveCallback(
   const board = Board.fromJSON(game.board);
 
   if (!isTheirTurn(game, userId)) {
-    try {
-      await ctx.editMessageReplyMarkup({ reply_markup: board.render(gameId) });
-    } catch {}
-    return await ctx.answerCallbackQuery("Сейчас не твой ход!");
+    await ctx.answerCallbackQuery("Сейчас не твой ход!");
+    await ctx.editMessageReplyMarkup({ reply_markup: board.render(gameId) });
+    return true;
   }
 
   const piece = board.getPiece(row, col);
