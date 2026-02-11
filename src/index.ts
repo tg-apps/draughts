@@ -18,25 +18,18 @@ bot.on("callback_query:data", (ctx) => {
   return handleMoveCallback(ctx, data);
 });
 
-bot.catch((err) => {
-  const ctx = err.ctx;
+bot.catch(({ ctx, error }) => {
   console.error(`Error while handling update ${ctx.update.update_id}:`);
-  const e = err.error;
-  if (e instanceof GrammyError) {
-    console.error("Error in request:", e.description);
-  } else {
-    console.error("Unknown error:", e);
+  if (error instanceof GrammyError) {
+    if (error.method === "editMessageReplyMarkup") return;
+    console.error(`Error in request (${error.method}): ${error.description}`);
+    return;
   }
+  console.error("Unknown error:", error);
 });
 
 const runner = run(bot);
 const stopRunner = () => runner.isRunning() && runner.stop();
 
-process.once("SIGINT", () => {
-  console.error("SIGINT");
-  void stopRunner();
-});
-process.once("SIGTERM", () => {
-  console.error("SIGTERM");
-  void stopRunner();
-});
+process.once("SIGINT", stopRunner);
+process.once("SIGTERM", stopRunner);
