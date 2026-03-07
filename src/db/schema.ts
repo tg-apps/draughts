@@ -23,13 +23,16 @@ export const games = sqliteTable(
       .references(() => users.id),
     blackPlayer: integer("black_player").references(() => users.id),
     board: text("board").notNull(),
-    turn: text("turn").$type<"white" | "black">().default("white").notNull(),
+    turn: text("turn", { enum: ["white", "black"] })
+      .default("white")
+      .notNull(),
     selectedPos: text("selected_pos"),
     isJumpChain: integer("is_jump_chain", { mode: "boolean" })
       .default(false)
       .notNull(),
-    status: text("status")
-      .$type<"playing" | "white_won" | "black_won" | "draw">()
+    status: text("status", {
+      enum: ["playing", "white_won", "black_won", "draw"],
+    })
       .default("playing")
       .notNull(),
   },

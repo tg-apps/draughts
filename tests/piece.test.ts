@@ -1,5 +1,6 @@
-import { Piece } from "#game/piece";
 import { describe, expect, it } from "bun:test";
+
+import { Piece } from "#game/piece";
 
 describe("Piece", () => {
   describe("new Piece", () => {

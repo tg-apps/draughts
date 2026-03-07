@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import type { Context } from "grammy";
 import type { User } from "grammy/types";
 
@@ -5,7 +6,6 @@ import { db } from "#db";
 import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName, upsertUser } from "#utils/user";
-import { eq } from "drizzle-orm";
 
 function parseData(data: string): { gameId: number; row: number; col: number } {
   const [, gameIdStr, r, c] = data.split(":");
@@ -36,7 +36,9 @@ export async function handleMoveCallback(
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
 
-  const game = await db.query.games.findFirst({ where: eq(games.id, gameId) });
+  const game = await db.query.games.findFirst({
+    where: (games, { eq }) => eq(games.id, gameId),
+  });
   if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
 
   if (!game.blackPlayer && userId !== game.whitePlayer) {
@@ -68,9 +70,10 @@ export async function handleMoveCallback(
 
     // Don't allow selecting a piece that can't jump if a capture is available
     if (!board.pieceHasCapture(row, col) && board.hasAnyCapture(game.turn)) {
-      return await ctx.answerCallbackQuery(
-        "Бить обязательно! Выбери другую фигуру.",
-      );
+      return await ctx.answerCallbackQuery({
+        text: "Бить обязательно! Выбери другую фигуру.",
+        show_alert: true,
+      });
     }
 
     await db

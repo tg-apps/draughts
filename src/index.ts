@@ -28,6 +28,14 @@ bot.catch(({ ctx, error }) => {
   console.error("Unknown error:", error);
 });
 
+void bot.api.setMyCommands([
+  { command: "start", description: "Помощь о боте" },
+  { command: "help", description: "Помощь о боте" },
+  { command: "game", description: "Начать игру в шашки" },
+  { command: "newgame", description: "Начать игру в шашки" },
+  { command: "draughts", description: "Начать игру в шашки" },
+]);
+
 const runner = run(bot);
 const stopRunner = () => runner.isRunning() && runner.stop();
 

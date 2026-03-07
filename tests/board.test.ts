@@ -1,7 +1,7 @@
-import type { PieceLabel } from "#game/piece";
+import { describe, expect, it } from "bun:test";
 
 import { Board, type PieceLabels } from "#game/board";
-import { describe, expect, it } from "bun:test";
+import type { PieceLabel } from "#game/piece";
 
 const getEmptyLabels = () =>
   Array.from({ length: 8 }, () => Array<PieceLabel>(8).fill("EMPTY"));
