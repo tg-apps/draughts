@@ -487,4 +487,16 @@ describe("Board", () => {
       expect(board.hasAnyMove("white")).toBeFalse();
     });
   });
+
+  describe("Board.makeMove", () => {
+    it("correctly makes a step move", () => {
+      const board = new Board();
+      board.makeMove(
+        { fromRow: 5, fromCol: 0, row: 4, col: 1 },
+        { type: "step" },
+      );
+      expect(board.getPiece(4, 1).color).toBe("white");
+      expect(board.getPiece(5, 0).isEmpty()).toBeTrue();
+    });
+  });
 });
