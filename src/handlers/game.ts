@@ -15,20 +15,28 @@ function parseData(data: string): {
   gameId: number;
   confirmed?: boolean;
   cancelled?: boolean;
-  offererId: number;
+  offererId?: number;
 } | null {
   const parts = data.split(":");
+  if (parts.length < 3 || parts.length > 5) return null;
+
   const action = parts[1];
-  if (action !== "resign" && action !== "draw") {
-    throw new Error("Invalid data format");
-  }
+  if (action !== "resign" && action !== "draw") return null;
+
   const gameIdStr = parts[2];
   if (!gameIdStr) return null;
   const gameId = parseInt(gameIdStr);
-  const confirmed = parts[3] === "confirm";
-  const cancelled = parts[3] === "cancel";
-  if (!parts[4]) throw new Error("Invalid data format");
-  const offererId = parseInt(parts[4]);
+  if (Number.isNaN(gameId)) return null;
+
+  const confirmed = parts[3] === "confirm" ? true : undefined;
+  const cancelled = parts[3] === "cancel" ? true : undefined;
+
+  let offererId: number | undefined;
+  if (parts[4]) {
+    offererId = parseInt(parts[4]);
+    if (Number.isNaN(offererId)) offererId = undefined;
+  }
+
   return { action, gameId, confirmed, cancelled, offererId };
 }
 
@@ -41,9 +49,9 @@ function isPlayer(
 
 function getCurrentPlayerName(
   game: { whitePlayer: number; blackPlayer: number | null },
-  turn: string,
+  perspective: string,
 ) {
-  return turn === "white"
+  return perspective === "white"
     ? getUserDisplayName(game.whitePlayer)
     : game.blackPlayer
       ? getUserDisplayName(game.blackPlayer)
@@ -52,9 +60,9 @@ function getCurrentPlayerName(
 
 function getOpponentName(
   game: { whitePlayer: number; blackPlayer: number | null },
-  turn: string,
+  perspective: string,
 ) {
-  return turn === "white"
+  return perspective === "white"
     ? game.blackPlayer
       ? getUserDisplayName(game.blackPlayer)
       : "ожидание соперника"
