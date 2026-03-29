@@ -1,12 +1,7 @@
-import config from "@gameroman/config/oxlint/typeaware";
+import { defineConfig } from "@gameroman/config/oxlint/typeaware";
 
-export default {
-  ...config,
+export default defineConfig({
   rules: {
-    ...config.rules,
-    "typescript/no-misused-promises": [
-      "error",
-      { checksVoidReturn: { arguments: false } },
-    ],
+    "typescript/no-unnecessary-condition": "error",
   },
-};
+});
