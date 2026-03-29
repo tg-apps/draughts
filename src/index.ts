@@ -1,6 +1,7 @@
 import { run } from "@grammyjs/runner";
 import { Bot, GrammyError } from "grammy";
 
+import { handleGameCallback } from "./handlers/game";
 import { handleHelp } from "./handlers/help";
 import { handleMoveCallback } from "./handlers/move";
 import { handleNewgame } from "./handlers/newgame";
@@ -14,8 +15,12 @@ bot.on("message").command(["start", "help"], handleHelp);
 bot.on("message").command(["newgame", "game", "draughts"], handleNewgame);
 bot.on("callback_query:data", (ctx) => {
   const data = ctx.callbackQuery.data;
-  if (!data.startsWith("move:")) return;
-  return handleMoveCallback(ctx, data);
+  if (data.startsWith("move:")) {
+    return handleMoveCallback(ctx, data);
+  }
+  if (data.startsWith("game:")) {
+    return handleGameCallback(ctx, data);
+  }
 });
 
 bot.catch(({ ctx, error }) => {
