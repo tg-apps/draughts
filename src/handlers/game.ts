@@ -13,31 +13,22 @@ type GameAction = "resign" | "draw";
 function parseData(data: string): {
   action: GameAction;
   gameId: number;
-  confirmed?: boolean;
-  cancelled?: boolean;
+  state?: "confirm" | "cancel";
   offererId?: number;
 } | null {
-  const parts = data.split(":");
-  if (parts.length < 3 || parts.length > 5) return null;
-
-  const action = parts[1];
+  const [, action, gameIdStr, state, offererIdStr] = data.split(":");
   if (action !== "resign" && action !== "draw") return null;
 
-  const gameIdStr = parts[2];
   if (!gameIdStr) return null;
+
   const gameId = parseInt(gameIdStr);
-  if (Number.isNaN(gameId)) return null;
 
-  const confirmed = parts[3] === "confirm" ? true : undefined;
-  const cancelled = parts[3] === "cancel" ? true : undefined;
+  if (state !== undefined && state !== "confirm" && state !== "cancel")
+    return null;
 
-  let offererId: number | undefined;
-  if (parts[4]) {
-    offererId = parseInt(parts[4]);
-    if (Number.isNaN(offererId)) offererId = undefined;
-  }
+  const offererId = offererIdStr ? parseInt(offererIdStr) : undefined;
 
-  return { action, gameId, confirmed, cancelled, offererId };
+  return { action, gameId, state, offererId };
 }
 
 function isPlayer(
@@ -76,7 +67,7 @@ export async function handleGameCallback(
   const parsed = parseData(data);
   if (!parsed) return await ctx.answerCallbackQuery("Неверный формат данных");
 
-  const { action, gameId, confirmed, cancelled, offererId } = parsed;
+  const { action, gameId, state, offererId } = parsed;
   const userId = ctx.from.id;
 
   const game = await db.query.games.findFirst({
@@ -98,7 +89,7 @@ export async function handleGameCallback(
 
   const board = Board.fromJSON(game.board);
 
-  if (cancelled) {
+  if (state === "cancel") {
     const moveInfoText = game.turn === "white" ? "Белые ⚪" : "Черные ⚫";
     const playersInfo = `Белые: ${getUserDisplayName(game.whitePlayer)}\nЧерные: ${getUserDisplayName(game.blackPlayer)}`;
     const messageText = `Ход: ${moveInfoText}\n\n${playersInfo}`;
@@ -108,7 +99,7 @@ export async function handleGameCallback(
     return await ctx.answerCallbackQuery();
   }
 
-  if (confirmed) {
+  if (state === "confirm") {
     switch (action) {
       case "resign": {
         const winner = userId === game.whitePlayer ? "black" : "white";
