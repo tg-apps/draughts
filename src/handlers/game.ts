@@ -125,6 +125,9 @@ export async function handleGameCallback(
         return await ctx.answerCallbackQuery();
       }
       case "draw": {
+        if (offererId !== game.whitePlayer && offererId !== game.blackPlayer) {
+          return await ctx.answerCallbackQuery("Неверный формат данных");
+        }
         if (userId === offererId) {
           return await ctx.answerCallbackQuery(
             "Вы не можете принять собственное предложение!",
