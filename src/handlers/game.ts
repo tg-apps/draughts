@@ -15,6 +15,7 @@ function parseData(data: string): {
   gameId: number;
   confirmed?: boolean;
   cancelled?: boolean;
+  offererId: number;
 } | null {
   const parts = data.split(":");
   const action = parts[1];
@@ -26,7 +27,9 @@ function parseData(data: string): {
   const gameId = parseInt(gameIdStr);
   const confirmed = parts[3] === "confirm";
   const cancelled = parts[3] === "cancel";
-  return { action, gameId, confirmed, cancelled };
+  if (!parts[4]) throw new Error("Invalid data format");
+  const offererId = parseInt(parts[4]);
+  return { action, gameId, confirmed, cancelled, offererId };
 }
 
 function isPlayer(
@@ -65,7 +68,7 @@ export async function handleGameCallback(
   const parsed = parseData(data);
   if (!parsed) return await ctx.answerCallbackQuery("Неверный формат данных");
 
-  const { action, gameId, confirmed, cancelled } = parsed;
+  const { action, gameId, confirmed, cancelled, offererId } = parsed;
   const userId = ctx.from.id;
 
   const game = await db.query.games.findFirst({
@@ -103,18 +106,28 @@ export async function handleGameCallback(
         const winner = userId === game.whitePlayer ? "black" : "white";
         const winnerLabel = winner === "white" ? "Белые ⚪" : "Черные ⚫";
 
-        await db
-          .update(games)
-          .set({ status: winner === "white" ? "white_won" : "black_won" })
-          .where(eq(games.id, gameId));
+        const status = winner === "white" ? "white_won" : "black_won";
+
+        await db.update(games).set({ status }).where(eq(games.id, gameId));
 
         await ctx.editMessageText(
-          `🏳️ Игра окончена! ${getUserDisplayName(userId)} сдался(ась).\n\nПобедили ${winnerLabel}!`,
-          { reply_markup: board.render(gameId, game.status) },
+          `🏳️ Игра окончена! ${getUserDisplayName(userId)} сдался.\n\nПобедили ${winnerLabel}!`,
+          { reply_markup: board.render(gameId, status) },
         );
         return await ctx.answerCallbackQuery();
       }
       case "draw": {
+        if (userId === offererId) {
+          return await ctx.answerCallbackQuery(
+            "Вы не можете принять собственное предложение!",
+          );
+        }
+        const otherPlayer =
+          game.whitePlayer === offererId ? game.blackPlayer : game.whitePlayer;
+        if (userId !== otherPlayer) {
+          return await ctx.answerCallbackQuery("Ты не участник этой игры!");
+        }
+
         await db
           .update(games)
           .set({ status: "draw" })
@@ -129,12 +142,14 @@ export async function handleGameCallback(
     }
   }
 
+  const userColor = userId === game.whitePlayer ? "white" : "black";
+
   switch (action) {
     case "resign": {
-      const opponentName = getOpponentName(game, game.turn);
+      const opponentName = getOpponentName(game, userColor);
       const keyboard = new InlineKeyboard();
       keyboard.text("Да", `game:resign:${gameId}:confirm`);
-      keyboard.text("Нет", `game:${action}:${gameId}:cancel`);
+      keyboard.text("Нет", `game:resign:${gameId}:cancel`);
 
       await ctx.editMessageText(
         `Вы уверены, что хотите сдаться?\n\nЕсли вы сдадитесь, победа присуждается ${opponentName}.`,
@@ -143,12 +158,12 @@ export async function handleGameCallback(
       return await ctx.answerCallbackQuery();
     }
     case "draw": {
-      const currentPlayerName = getCurrentPlayerName(game, game.turn);
-      const opponentName = getOpponentName(game, game.turn);
+      const currentPlayerName = getCurrentPlayerName(game, userColor);
+      const opponentName = getOpponentName(game, userColor);
 
       const keyboard = new InlineKeyboard();
-      keyboard.text("Да", `game:draw:${gameId}:confirm`);
-      keyboard.text("Нет", `game:${action}:${gameId}:cancel`);
+      keyboard.text("Да", `game:draw:${gameId}:confirm:${userId}`);
+      keyboard.text("Нет", `game:draw:${gameId}:cancel`);
 
       await ctx.editMessageText(
         `${currentPlayerName} предлагает ничью.\n\n${opponentName}, вы согласны на ничью?`,
