@@ -10,7 +10,7 @@
         "grammy": "^1.41.1",
       },
       "devDependencies": {
-        "@gameroman/config": "^0.0.3",
+        "@gameroman/config": "^0.1.0",
         "@types/bun": "^1.3.11",
         "oxfmt": "^0.41.0",
         "oxlint": "^1.56.0",
@@ -20,7 +20,7 @@
     },
   },
   "packages": {
-    "@gameroman/config": ["@gameroman/config@0.0.3", "", { "peerDependencies": { "@biomejs/biome": "^2.4.7", "oxfmt": ">=0.40.0", "oxlint": "^1.54.0", "oxlint-tsgolint": ">=0.17.0", "typescript": "^5.9.3" }, "optionalPeers": ["@biomejs/biome", "oxfmt", "oxlint", "oxlint-tsgolint", "typescript"] }, "sha512-uZ06DWb/ApyX/oATmz9/j5Ar0de593rNnfrgmP6X1CLP5v8SKrvHzSVCq/SC7FYFRSeD6IV/r7dOFu+Ks813HA=="],
+    "@gameroman/config": ["@gameroman/config@0.1.0", "", { "peerDependencies": { "@biomejs/biome": "^2.4.13", "oxfmt": ">=0.46.0", "oxlint": "^1.61.0", "oxlint-tsgolint": ">=0.22.0", "typescript": "^6.0.3" }, "optionalPeers": ["@biomejs/biome", "oxfmt", "oxlint", "oxlint-tsgolint", "typescript"] }, "sha512-n0h7gUhPHuEkbQi89ZY1hn87wEJzfHEyCKG/K1EiSWYYYmq2D32yuQTyyQqoxfOfzSxf1tauqX4MxwMqPClh5Q=="],
 
     "@grammyjs/runner": ["@grammyjs/runner@2.0.3", "", { "dependencies": { "abort-controller": "^3.0.0" }, "peerDependencies": { "grammy": "^1.13.1" } }, "sha512-nckmTs1dPWfVQteK9cxqxzE+0m1VRvluLWB8UgFzsjg62w3qthPJt0TYtJBEdG7OedvfQq4vnFAyE6iaMkR42A=="],
 
