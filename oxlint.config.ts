@@ -1,7 +1,3 @@
-import { defineConfig } from "@gameroman/config/oxlint/typeaware";
+import { config } from "@gameroman/config/oxlint/typeaware";
 
-export default defineConfig({
-  rules: {
-    "typescript/no-unnecessary-condition": "error",
-  },
-});
+export default config;
