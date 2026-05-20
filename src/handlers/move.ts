@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "grammy";
 import type { User } from "grammy/types";
 
-import { db } from "#db";
+import type { DatabaseInstance } from "#db";
 import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName, upsertUser } from "#utils/user";
@@ -32,6 +32,7 @@ function parsePos(pos: string): { row: number; col: number } {
 export async function handleMoveCallback(
   ctx: Context & { from: User },
   data: string,
+  db: DatabaseInstance,
 ): Promise<true> {
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
@@ -40,6 +41,10 @@ export async function handleMoveCallback(
     where: (games, { eq }) => eq(games.id, gameId),
   });
   if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
+
+  if (game.status !== "playing") {
+    return await ctx.answerCallbackQuery("Игра уже окончена!");
+  }
 
   if (!game.blackPlayer && userId !== game.whitePlayer) {
     upsertUser(ctx.from);
@@ -54,7 +59,9 @@ export async function handleMoveCallback(
 
   if (!isTheirTurn(game, userId)) {
     await ctx.answerCallbackQuery("Сейчас не твой ход!");
-    await ctx.editMessageReplyMarkup({ reply_markup: board.render(gameId) });
+    await ctx.editMessageReplyMarkup({
+      reply_markup: board.render(gameId, game.status),
+    });
     return true;
   }
 
@@ -127,18 +134,16 @@ export async function handleMoveCallback(
     // Current player wins because the next player is stuck or out of pieces
     const winnerLabel = isWhiteTurn ? "Белые ⚪" : "Черные ⚫";
 
+    const status = isWhiteTurn ? "white_won" : "black_won";
+
     await db
       .update(games)
-      .set({
-        board: JSON.stringify(board),
-        status: isWhiteTurn ? "white_won" : "black_won",
-        selectedPos: null,
-      })
+      .set({ board: JSON.stringify(board), status, selectedPos: null })
       .where(eq(games.id, gameId));
 
     await ctx.editMessageText(
       `🎉 Игра окончена! Победили ${winnerLabel}!\n\n${getPlayersInfo(game)}`,
-      { reply_markup: board.render(gameId) },
+      { reply_markup: board.render(gameId, status) },
     );
     return await ctx.answerCallbackQuery("Игра окончена!");
   }
@@ -158,7 +163,7 @@ export async function handleMoveCallback(
   const messageText = `Ход: ${moveInfoText}\n\n${playersInfo}`;
 
   await ctx.editMessageText(messageText, {
-    reply_markup: board.render(gameId),
+    reply_markup: board.render(gameId, game.status),
   });
 
   return await ctx.answerCallbackQuery();

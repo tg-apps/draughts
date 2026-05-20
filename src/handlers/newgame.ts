@@ -1,13 +1,14 @@
 import type { Context } from "grammy";
 import type { Chat, Message, User } from "grammy/types";
 
-import { db } from "#db";
+import type { DatabaseInstance } from "#db";
 import { games } from "#db/schema";
 import { Board } from "#game/board";
 import { upsertUser, getUserDisplayName } from "#utils/user";
 
 export async function handleNewgame(
   ctx: Context & { from: User; chat: Chat },
+  db: DatabaseInstance,
 ): Promise<Message.TextMessage> {
   upsertUser(ctx.from);
 

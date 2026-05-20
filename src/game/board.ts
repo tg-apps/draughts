@@ -1,5 +1,7 @@
 import { InlineKeyboard } from "grammy";
 
+import type { GameStatus } from "#db/schema";
+
 import type { PieceColor, PieceLabel } from "./piece";
 import { Piece } from "./piece";
 
@@ -59,7 +61,7 @@ export class Board {
     this.#cells[row][col] = piece;
   }
 
-  render(gameId: number): InlineKeyboard {
+  render(gameId: number, status: GameStatus = "playing"): InlineKeyboard {
     const keyboard = new InlineKeyboard();
     this.#cells.forEach((row, r) => {
       row.forEach((cell, c) => {
@@ -67,6 +69,14 @@ export class Board {
       });
       keyboard.row();
     });
+
+    if (status === "playing") {
+      keyboard
+        .row()
+        .text("Сдаться", `game:resign:${gameId}`)
+        .text("Предложить ничью", `game:draw:${gameId}`);
+    }
+
     return keyboard;
   }
 

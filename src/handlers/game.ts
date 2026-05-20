@@ -1,0 +1,212 @@
+import { eq } from "drizzle-orm";
+import { InlineKeyboard } from "grammy";
+import type { Context } from "grammy";
+import type { User } from "grammy/types";
+
+import type { DatabaseInstance } from "#db";
+import { games } from "#db/schema";
+import { Board } from "#game/board";
+import { getUserDisplayName } from "#utils/user";
+
+type GameAction = "resign" | "draw";
+
+const pendingDraws = new Map<number, number>();
+
+function parseData(data: string): {
+  action: GameAction;
+  gameId: number;
+  state?: "confirm" | "cancel";
+  offererId?: number;
+} | null {
+  const [, action, gameIdStr, state, offererIdStr] = data.split(":");
+  if (action !== "resign" && action !== "draw") return null;
+
+  if (!gameIdStr) return null;
+
+  const gameId = parseInt(gameIdStr);
+
+  if (state !== undefined && state !== "confirm" && state !== "cancel")
+    return null;
+
+  const offererId = offererIdStr ? parseInt(offererIdStr) : undefined;
+
+  return { action, gameId, state, offererId };
+}
+
+function isPlayer(
+  game: { whitePlayer: number; blackPlayer: number | null },
+  userId: number,
+) {
+  return userId === game.whitePlayer || userId === game.blackPlayer;
+}
+
+type PlayerColor = "white" | "black";
+
+function getCurrentPlayerName(
+  game: { whitePlayer: number; blackPlayer: number | null },
+  perspective: PlayerColor,
+) {
+  return perspective === "white"
+    ? getUserDisplayName(game.whitePlayer)
+    : game.blackPlayer
+      ? getUserDisplayName(game.blackPlayer)
+      : "???";
+}
+
+function getOpponentName(
+  game: { whitePlayer: number; blackPlayer: number | null },
+  perspective: PlayerColor,
+) {
+  return perspective === "white"
+    ? game.blackPlayer
+      ? getUserDisplayName(game.blackPlayer)
+      : "ожидание соперника"
+    : getUserDisplayName(game.whitePlayer);
+}
+
+export async function handleGameCallback(
+  ctx: Context & { from: User },
+  data: string,
+  db: DatabaseInstance,
+): Promise<true> {
+  const parsed = parseData(data);
+  if (!parsed) return await ctx.answerCallbackQuery("Неверный формат данных");
+
+  const { action, gameId, state, offererId } = parsed;
+  const userId = ctx.from.id;
+
+  const game = await db.query.games.findFirst({
+    where: (games, { eq }) => eq(games.id, gameId),
+  });
+  if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
+
+  if (game.status !== "playing") {
+    return await ctx.answerCallbackQuery("Игра уже окончена!");
+  }
+
+  if (!game.blackPlayer) {
+    return await ctx.answerCallbackQuery("Соперник ещё не присоединился!");
+  }
+
+  if (!isPlayer(game, userId)) {
+    return await ctx.answerCallbackQuery("Ты не участник этой игры!");
+  }
+
+  const board = Board.fromJSON(game.board);
+
+  if (state === "cancel") {
+    if (action === "draw") {
+      pendingDraws.delete(gameId);
+    }
+    const moveInfoText = game.turn === "white" ? "Белые ⚪" : "Черные ⚫";
+    const playersInfo = `Белые: ${getUserDisplayName(game.whitePlayer)}\nЧерные: ${getUserDisplayName(game.blackPlayer)}`;
+    const messageText = `Ход: ${moveInfoText}\n\n${playersInfo}`;
+    await ctx.editMessageText(messageText, {
+      reply_markup: board.render(gameId, game.status),
+    });
+    return await ctx.answerCallbackQuery();
+  }
+
+  if (state === "confirm") {
+    switch (action) {
+      case "resign": {
+        if (offererId === undefined || userId !== offererId) {
+          return await ctx.answerCallbackQuery(
+            "Вы не можете подтвердить чужую сдачу!",
+          );
+        }
+
+        // Remove a pending draw if the other player resigns
+        pendingDraws.delete(gameId);
+
+        const winner = userId === game.whitePlayer ? "black" : "white";
+        const winnerLabel = winner === "white" ? "Белые ⚪" : "Черные ⚫";
+
+        const status = winner === "white" ? "white_won" : "black_won";
+
+        await db
+          .update(games)
+          .set({ status, selectedPos: null })
+          .where(eq(games.id, gameId));
+
+        await ctx.editMessageText(
+          `🏳️ Игра окончена! ${getUserDisplayName(userId)} сдался.\n\nПобедили ${winnerLabel}!`,
+          { reply_markup: board.render(gameId, status) },
+        );
+        return await ctx.answerCallbackQuery();
+      }
+      case "draw": {
+        const storedOffererId = pendingDraws.get(gameId);
+        if (storedOffererId === undefined) {
+          return await ctx.answerCallbackQuery(
+            "Нет активного предложения ничьи",
+          );
+        }
+        if (storedOffererId !== offererId) {
+          return await ctx.answerCallbackQuery("Неверный формат данных");
+        }
+        if (userId === offererId) {
+          return await ctx.answerCallbackQuery(
+            "Вы не можете принять собственное предложение!",
+          );
+        }
+        const otherPlayer =
+          game.whitePlayer === offererId ? game.blackPlayer : game.whitePlayer;
+        if (userId !== otherPlayer) {
+          return await ctx.answerCallbackQuery("Ты не участник этой игры!");
+        }
+
+        pendingDraws.delete(gameId);
+
+        await db
+          .update(games)
+          .set({ status: "draw", selectedPos: null })
+          .where(eq(games.id, gameId));
+
+        await ctx.editMessageText(
+          `🤝 Ничья! Игроки согласились на ничью.\n\nБелые: ${getUserDisplayName(game.whitePlayer)}\nЧерные: ${getUserDisplayName(game.blackPlayer)}`,
+          { reply_markup: board.render(gameId, "draw") },
+        );
+        return await ctx.answerCallbackQuery();
+      }
+    }
+  }
+
+  const userColor = userId === game.whitePlayer ? "white" : "black";
+
+  switch (action) {
+    case "resign": {
+      const opponentName = getOpponentName(game, userColor);
+      const keyboard = new InlineKeyboard();
+      keyboard.text("Да", `game:resign:${gameId}:confirm:${userId}`);
+      keyboard.text("Нет", `game:resign:${gameId}:cancel`);
+
+      await ctx.editMessageText(
+        `Вы уверены, что хотите сдаться?\n\nЕсли вы сдадитесь, победа присуждается ${opponentName}.`,
+        { reply_markup: keyboard },
+      );
+      return await ctx.answerCallbackQuery();
+    }
+    case "draw": {
+      if (pendingDraws.has(gameId)) {
+        return await ctx.answerCallbackQuery(
+          "Предложение ничьи уже отправлено",
+        );
+      }
+
+      pendingDraws.set(gameId, userId);
+      const currentPlayerName = getCurrentPlayerName(game, userColor);
+      const opponentName = getOpponentName(game, userColor);
+
+      const keyboard = new InlineKeyboard();
+      keyboard.text("Да", `game:draw:${gameId}:confirm:${userId}`);
+      keyboard.text("Нет", `game:draw:${gameId}:cancel`);
+
+      await ctx.editMessageText(
+        `${currentPlayerName} предлагает ничью.\n\n${opponentName}, вы согласны на ничью?`,
+        { reply_markup: keyboard },
+      );
+      return await ctx.answerCallbackQuery();
+    }
+  }
+}
