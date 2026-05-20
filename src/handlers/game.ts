@@ -40,9 +40,11 @@ function isPlayer(
   return userId === game.whitePlayer || userId === game.blackPlayer;
 }
 
+type PlayerColor = "white" | "black";
+
 function getCurrentPlayerName(
   game: { whitePlayer: number; blackPlayer: number | null },
-  perspective: string,
+  perspective: PlayerColor,
 ) {
   return perspective === "white"
     ? getUserDisplayName(game.whitePlayer)
@@ -53,7 +55,7 @@ function getCurrentPlayerName(
 
 function getOpponentName(
   game: { whitePlayer: number; blackPlayer: number | null },
-  perspective: string,
+  perspective: PlayerColor,
 ) {
   return perspective === "white"
     ? game.blackPlayer
