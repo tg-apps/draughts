@@ -116,6 +116,7 @@ export async function handleGameCallback(
           );
         }
 
+        // Remove a pending draw if the other player resigns
         pendingDraws.delete(gameId);
 
         const winner = userId === game.whitePlayer ? "black" : "white";
@@ -187,6 +188,12 @@ export async function handleGameCallback(
       return await ctx.answerCallbackQuery();
     }
     case "draw": {
+      if (pendingDraws.has(gameId)) {
+        return await ctx.answerCallbackQuery(
+          "Предложение ничьи уже отправлено",
+        );
+      }
+
       pendingDraws.set(gameId, userId);
       const currentPlayerName = getCurrentPlayerName(game, userColor);
       const opponentName = getOpponentName(game, userColor);
