@@ -3,12 +3,14 @@ import { InlineKeyboard } from "grammy";
 import type { Context } from "grammy";
 import type { User } from "grammy/types";
 
-import { db } from "#db";
+import type { DatabaseInstance } from "#db";
 import { games } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName } from "#utils/user";
 
 type GameAction = "resign" | "draw";
+
+const pendingDraws = new Map<number, number>();
 
 function parseData(data: string): {
   action: GameAction;
@@ -63,6 +65,7 @@ function getOpponentName(
 export async function handleGameCallback(
   ctx: Context & { from: User },
   data: string,
+  db: DatabaseInstance,
 ): Promise<true> {
   const parsed = parseData(data);
   if (!parsed) return await ctx.answerCallbackQuery("Неверный формат данных");
@@ -90,6 +93,9 @@ export async function handleGameCallback(
   const board = Board.fromJSON(game.board);
 
   if (state === "cancel") {
+    if (action === "draw") {
+      pendingDraws.delete(gameId);
+    }
     const moveInfoText = game.turn === "white" ? "Белые ⚪" : "Черные ⚫";
     const playersInfo = `Белые: ${getUserDisplayName(game.whitePlayer)}\nЧерные: ${getUserDisplayName(game.blackPlayer)}`;
     const messageText = `Ход: ${moveInfoText}\n\n${playersInfo}`;
@@ -116,7 +122,13 @@ export async function handleGameCallback(
         return await ctx.answerCallbackQuery();
       }
       case "draw": {
-        if (offererId !== game.whitePlayer && offererId !== game.blackPlayer) {
+        const storedOffererId = pendingDraws.get(gameId);
+        if (storedOffererId === undefined) {
+          return await ctx.answerCallbackQuery(
+            "Нет активного предложения ничьи",
+          );
+        }
+        if (storedOffererId !== offererId) {
           return await ctx.answerCallbackQuery("Неверный формат данных");
         }
         if (userId === offererId) {
@@ -129,6 +141,8 @@ export async function handleGameCallback(
         if (userId !== otherPlayer) {
           return await ctx.answerCallbackQuery("Ты не участник этой игры!");
         }
+
+        pendingDraws.delete(gameId);
 
         await db
           .update(games)
@@ -160,6 +174,7 @@ export async function handleGameCallback(
       return await ctx.answerCallbackQuery();
     }
     case "draw": {
+      pendingDraws.set(gameId, userId);
       const currentPlayerName = getCurrentPlayerName(game, userColor);
       const opponentName = getOpponentName(game, userColor);
 

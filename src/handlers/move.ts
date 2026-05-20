@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Context } from "grammy";
 import type { User } from "grammy/types";
 
-import { db } from "#db";
+import type { DatabaseInstance } from "#db";
 import { games, type GameInfo } from "#db/schema";
 import { Board } from "#game/board";
 import { getUserDisplayName, upsertUser } from "#utils/user";
@@ -32,6 +32,7 @@ function parsePos(pos: string): { row: number; col: number } {
 export async function handleMoveCallback(
   ctx: Context & { from: User },
   data: string,
+  db: DatabaseInstance,
 ): Promise<true> {
   const { gameId, row, col } = parseData(data);
   const userId = ctx.from.id;
