@@ -108,12 +108,23 @@ export async function handleGameCallback(
   if (state === "confirm") {
     switch (action) {
       case "resign": {
+        if (offererId === undefined || userId !== offererId) {
+          return await ctx.answerCallbackQuery(
+            "Вы не можете подтвердить чужую сдачу!",
+          );
+        }
+
+        pendingDraws.delete(gameId);
+
         const winner = userId === game.whitePlayer ? "black" : "white";
         const winnerLabel = winner === "white" ? "Белые ⚪" : "Черные ⚫";
 
         const status = winner === "white" ? "white_won" : "black_won";
 
-        await db.update(games).set({ status }).where(eq(games.id, gameId));
+        await db
+          .update(games)
+          .set({ status, selectedPos: null })
+          .where(eq(games.id, gameId));
 
         await ctx.editMessageText(
           `🏳️ Игра окончена! ${getUserDisplayName(userId)} сдался.\n\nПобедили ${winnerLabel}!`,
@@ -146,7 +157,7 @@ export async function handleGameCallback(
 
         await db
           .update(games)
-          .set({ status: "draw" })
+          .set({ status: "draw", selectedPos: null })
           .where(eq(games.id, gameId));
 
         await ctx.editMessageText(
@@ -164,7 +175,7 @@ export async function handleGameCallback(
     case "resign": {
       const opponentName = getOpponentName(game, userColor);
       const keyboard = new InlineKeyboard();
-      keyboard.text("Да", `game:resign:${gameId}:confirm`);
+      keyboard.text("Да", `game:resign:${gameId}:confirm:${userId}`);
       keyboard.text("Нет", `game:resign:${gameId}:cancel`);
 
       await ctx.editMessageText(

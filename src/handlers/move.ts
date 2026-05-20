@@ -42,6 +42,10 @@ export async function handleMoveCallback(
   });
   if (!game) return await ctx.answerCallbackQuery("Игра не найдена");
 
+  if (game.status !== "playing") {
+    return await ctx.answerCallbackQuery("Игра уже окончена!");
+  }
+
   if (!game.blackPlayer && userId !== game.whitePlayer) {
     upsertUser(ctx.from);
     await db
